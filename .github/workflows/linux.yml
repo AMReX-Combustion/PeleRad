@@ -1,0 +1,48 @@
+name: Run CI
+
+on: [push, pull_request]
+
+jobs:
+  serial:
+    name: serial
+    runs-on: [ubuntu-18.04]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: info
+      run: |
+        g++ -v
+        cmake --version
+    - name: setup
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build-ci
+        cmake -E make_directory ${{runner.workspace}}/deps
+    - name: dependencies
+      run: |
+        # AMREX
+        cd ${{runner.workspace}}/deps
+        git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/
+    - name: configure
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        cmake -D CMAKE_BUILD_TYPE=Debug \
+              -D DPELERAD_DIM=3 \
+              -DPELERAD_ENABLE_MPI=OFF \
+              -DPELERAD_ENABLE_OPENMP=OFF \
+              -DPELERAD_ENABLE_AMREX_EB=OFF \
+              -DPELERAD_ENABLE_TESTS=ON \
+              -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex
+              .
+    - name: archive
+      uses: actions/upload-artifact@v1
+      with:
+        name: serial.log
+        path: detailed.log
+    - name: build
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        make -j 8
+    - name: test
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        ctest --output-on-failure
