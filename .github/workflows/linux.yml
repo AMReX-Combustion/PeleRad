@@ -19,6 +19,9 @@ jobs:
         cmake -E make_directory ${{runner.workspace}}/deps
     - name: dependencies
       run: |
+        # boost
+        sudo apt-get update
+        sudo apt-get -y install boost
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/
     - name: configure
