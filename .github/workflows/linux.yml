@@ -31,7 +31,7 @@ jobs:
               -DPELERAD_ENABLE_AMREX_EB=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
-              .
+              ${GITHUB_WORKSPACE}
     - name: archive
       uses: actions/upload-artifact@v1
       with:
