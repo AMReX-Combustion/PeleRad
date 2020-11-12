@@ -20,7 +20,6 @@ jobs:
     - name: dependencies
       run: |
         # AMREX
-        cd ${{runner.workspace}}/deps
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/
     - name: configure
       working-directory: ${{runner.workspace}}/build-ci
@@ -31,7 +30,7 @@ jobs:
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
-              -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex
+              -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
               .
     - name: archive
       uses: actions/upload-artifact@v1
