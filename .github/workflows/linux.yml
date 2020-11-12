@@ -27,8 +27,8 @@ jobs:
     - name: configure
       working-directory: ${{runner.workspace}}/build-ci
       run: |
-        cmake -D CMAKE_BUILD_TYPE=Debug \
-              -D DPELERAD_DIM=3 \
+        cmake -DCMAKE_BUILD_TYPE=Debug \
+              -DPELERAD_DIM=3 \
               -DPELERAD_ENABLE_MPI=OFF \
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=OFF \
