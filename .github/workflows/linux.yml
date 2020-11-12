@@ -21,7 +21,7 @@ jobs:
       run: |
         # boost
         sudo apt-get update
-        sudo apt-get -y install boost
+        sudo apt-get -y install libboost-all-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/
     - name: configure
