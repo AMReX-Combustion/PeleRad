@@ -43,3 +43,43 @@ jobs:
       working-directory: ${{runner.workspace}}/build-ci
       run: |
         ctest --output-on-failure
+  mpi-cpu:
+    name: mpi-cpu
+    runs-on: [ubuntu-20.04]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: info
+      run: |
+        g++ -v
+        cmake --version
+    - name: setup
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build-ci
+        cmake -E make_directory ${{runner.workspace}}/deps
+    - name: dependencies
+      run: |
+        # boost
+        sudo apt-get update
+        sudo apt-get -y install libboost-all-dev
+        # AMREX
+        git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
+    - name: configure
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Debug \
+              -DPELERAD_DIM=3 \
+              -DPELERAD_ENABLE_MPI=ON \
+              -DPELERAD_ENABLE_OPENMP=OFF \
+              -DPELERAD_ENABLE_AMREX_EB=OFF \
+              -DPELERAD_ENABLE_TESTS=ON \
+              -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
+              ${GITHUB_WORKSPACE}
+    - name: build
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        make -j 8
+    - name: test
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        ctest --output-on-failure

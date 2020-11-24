@@ -3,7 +3,7 @@
 #define BOOST_TEST_NO_MAIN
 #include <boost/test/unit_test.hpp>
 
-#if defined(PELERAD_MPI_UNIT_TEST)
+#ifdef PELERAD_ENABLE_MPI
 #include <mpi.h>
 #endif
 
@@ -12,7 +12,7 @@ struct ScopeGuard
     ScopeGuard(int argc, char* argv[])
     {
 
-#if defined(PELERAD_MPI_UNIT_TEST)
+#ifdef PELERAD_ENABLE_MPI
         MPI_Init(&argc, &argv);
 #endif
         amrex::Initialize(argc, argv);
@@ -21,7 +21,7 @@ struct ScopeGuard
     ~ScopeGuard()
     {
         amrex::Finalize();
-#if defined(PELERAD_MPI_UNIT_TEST)
+#ifdef PELERAD_ENABLE_MPI
         MPI_Finalize();
 #endif
     }

@@ -13,6 +13,8 @@ if(PELERAD_ENABLE_MPI)
   target_link_libraries(PeleRad INTERFACE MPI::MPI_CXX)
 endif()
 
+find_package(Boost 1.67.0 REQUIRED COMPONENTS program_options unit_test_framework)
+
 option(PELERAD_ENABLE_CUDA "CUDA build" OFF)
 if(PELERAD_ENABLE_CUDA)
   enable_language(CUDA)
