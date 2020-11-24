@@ -1,7 +1,6 @@
 #include <boost/test/unit_test.hpp>
 #define BOOST_TEST_MODULE amrexparallelfor
 
-#include <AMReX.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_ParmParse.H>
 
