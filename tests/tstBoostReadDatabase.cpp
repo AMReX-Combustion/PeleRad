@@ -12,7 +12,18 @@ namespace bio = boost::iostreams;
 
 BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
 {
-    bfs::path kplco2("../../data/kpDB/kpl_co2.dat");
+    auto argc = but::framework::master_test_suite().argc;
+    std::string data_path;
+
+    if (argc > 1)
+    {
+        auto argv = but::framework::master_test_suite().argv[1];
+        data_path = argv;
+    }
+    else
+        data_path = "../../data/kpDB/";
+
+    bfs::path kplco2(data_path + "kpl_co2.dat");
 
     BOOST_TEST(bfs::exists(kplco2));
 
