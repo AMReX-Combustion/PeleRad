@@ -1,6 +1,8 @@
 #include <boost/test/unit_test.hpp>
 #define BOOST_TEST_MODULE amrexgetradprop
 
+#include <SpectralModels.hpp>
+
 #include <AMReX_MultiFab.H>
 #include <AMReX_ParmParse.H>
 
@@ -11,9 +13,9 @@ using namespace amrex;
 
 AMREX_GPU_HOST_DEVICE
 inline void initGasField(int i, int j, int k,
-    amrex::Array4<amrex::Real> const& mf,
-    amrex::Array4<amrex::Real> const& temp,
-    amrex::Array4<amrex::Real> const& pressure, std::vector<amrex::Real> dx,
+    const amrex::Array4<amrex::Real>& mf,
+    const amrex::Array4<amrex::Real>& temp,
+    const amrex::Array4<amrex::Real>& pressure, std::vector<amrex::Real> dx,
     std::vector<amrex::Real> plo, std::vector<amrex::Real> phi) noexcept
 {
     constexpr int num_rad_species = 3;
@@ -49,6 +51,7 @@ inline void initGasField(int i, int j, int k,
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 {
+    using PeleRad::RadProp::getRadProp;
 
     ParmParse pp;
     std::vector<int> npts { 128, 128, 128 };
@@ -89,15 +92,15 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     {
         const Box& gbox = mfi.tilebox();
 
-        Array4<Real> const& Yrad = mass_frac_rad.array(mfi);
-        Array4<Real> const& T    = temperature.array(mfi);
-        Array4<Real> const& P    = pressure.array(mfi);
+        const Array4<Real>& Yrad  = mass_frac_rad.array(mfi);
+        const Array4<Real>& T     = temperature.array(mfi);
+        const Array4<Real>& P     = pressure.array(mfi);
+        const Array4<Real>& kappa = absc.array(mfi);
 
-        amrex::ParallelFor(
-            gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                initGasField(i, j, k, Yrad, T, P, dx, plo, phi);
-                // getRadProp(tbx, Yrad, Y, P, absc);
-            });
+        ParallelFor(gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+            initGasField(i, j, k, Yrad, T, P, dx, plo, phi);
+            getRadProp(i, j, k, Yrad, T, P, kappa);
+        });
     }
 
     /*
