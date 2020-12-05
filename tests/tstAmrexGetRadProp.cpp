@@ -12,22 +12,21 @@
 using namespace amrex;
 
 AMREX_GPU_HOST_DEVICE
-inline void initGasField(int i, int j, int k,
-    const amrex::Array4<amrex::Real>& mf,
-    const amrex::Array4<amrex::Real>& temp,
-    const amrex::Array4<amrex::Real>& pressure, std::vector<amrex::Real> dx,
-    std::vector<amrex::Real> plo, std::vector<amrex::Real> phi) noexcept
+inline void initGasField(int i, int j, int k, const Array4<amrex::Real>& mf,
+    const Array4<amrex::Real>& temp, const Array4<amrex::Real>& pressure,
+    const GpuArray<amrex::Real, 3ul>& dx, const GpuArray<amrex::Real, 3ul>& plo,
+    const GpuArray<amrex::Real, 3ul>& phi) noexcept
 {
     constexpr int num_rad_species = 3;
-    amrex::Real dTemp             = 5.0;
-    amrex::Real dPres             = 0.05;
-    amrex::Real x                 = plo[0] + (i + 0.5) * dx[0];
-    amrex::Real y                 = plo[1] + (j + 0.5) * dx[1];
-    amrex::Real pi                = 4.0 * std::atan(1.0);
-    amrex::GpuArray<amrex::Real, 3> LL;
-    amrex::GpuArray<amrex::Real, 3> PP;
-    amrex::GpuArray<amrex::Real, 3> Y_lo;
-    amrex::GpuArray<amrex::Real, 3> Y_hi;
+    Real dTemp                    = 5.0;
+    Real dPres                    = 0.05;
+    Real x                        = plo[0] + (i + 0.5) * dx[0];
+    Real y                        = plo[1] + (j + 0.5) * dx[1];
+    Real pi                       = 4.0 * std::atan(1.0);
+    GpuArray<amrex::Real, 3> LL;
+    GpuArray<amrex::Real, 3> PP;
+    GpuArray<amrex::Real, 3> Y_lo;
+    GpuArray<amrex::Real, 3> Y_hi;
 
     for (int n = 0; n < num_rad_species; n++)
     {
@@ -58,8 +57,11 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     Box domain(IntVect(D_DECL(0, 0, 0)),
         IntVect(D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1)));
 
-    std::vector<Real> plo(3, 0), phi(3, 0), dx(3, 1);
-    for (int i = 0; i < BL_SPACEDIM; ++i)
+    GpuArray<Real, 3ul> plo;
+    GpuArray<Real, 3ul> phi;
+    GpuArray<Real, 3ul> dx;
+
+    for (int i = 0; i < AMREX_SPACEDIM; ++i)
     {
         phi[i] = domain.length(i);
         dx[i]  = (phi[i] - plo[i]) / domain.length(i);
@@ -82,8 +84,6 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     MultiFab mass_frac_rad(ba, dm, num_rad_species, num_grow);
     MultiFab temperature(ba, dm, 1, num_grow);
     MultiFab pressure(ba, dm, 1, num_grow);
-
-    IntVect tilesize(D_DECL(10240, 8, 32));
 
     MultiFab absc(ba, dm, 1, num_grow);
 
