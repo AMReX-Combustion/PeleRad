@@ -30,19 +30,15 @@ BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
 
     bio::stream<bio::mapped_file_source> data(kplco2);
 
-    // std::vector<float> T;
-    // std::vector<float> kpco2;
-
-    amrex::GpuArray<amrex::Real, 125ul> T;
-    amrex::GpuArray<amrex::Real, 125ul> kpco2;
+    amrex::GpuArray<amrex::Real, 126ul> T;
+    amrex::GpuArray<amrex::Real, 126ul> kpco2;
 
     size_t i = 0;
 
     for (float T_temp, kp_temp; data >> T_temp >> kp_temp;)
     {
-        // std::cout << "Reading from file:" << T << " " << kp << '\n';
-        // T.push_back(T_temp);
-        // kpco2.push_back(kp_temp);
+        std::cout << "Reading from file:" << T_temp << " " << kp_temp
+                  << " i=" << i << '\n';
         T[i]     = T_temp;
         kpco2[i] = kp_temp;
         i++;
