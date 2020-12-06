@@ -34,6 +34,7 @@ endif()
 
 if (PELERAD_ENABLE_CUDA)
   setup_target_for_cuda_compilation(PeleRad_AmrexParallelFor.exe)
+  setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
   setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
 endif ()
 
