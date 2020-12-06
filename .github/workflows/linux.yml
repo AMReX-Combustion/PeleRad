@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   serial:
     name: serial
-    runs-on: [ubuntu-20.10]
+    runs-on: [ubuntu-20.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -45,7 +45,7 @@ jobs:
         ctest --output-on-failure
   mpi-cpu:
     name: mpi-cpu
-    runs-on: [ubuntu-20.10]
+    runs-on: [ubuntu-20.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -85,7 +85,7 @@ jobs:
         ctest --output-on-failure
   mpi-cuda:
     name: mpi-cuda
-    runs-on: [ubuntu-20.10]
+    runs-on: [ubuntu-20.04]
 
     steps:
     - uses: actions/checkout@v2
