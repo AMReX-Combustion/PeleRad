@@ -1,9 +1,7 @@
-#include <boost/filesystem.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <boost/test/unit_test.hpp>
 #define BOOST_TEST_MODULE amrexgetradprop
 
+#include <PlanckMean.hpp>
 #include <SpectralModels.hpp>
 
 #include <AMReX_MultiFab.H>
@@ -13,10 +11,6 @@
 #include <vector>
 
 using namespace amrex;
-
-namespace but = boost::unit_test;
-namespace bfs = boost::filesystem;
-namespace bio = boost::iostreams;
 
 AMREX_GPU_HOST_DEVICE
 inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
@@ -65,40 +59,10 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     data_path = "../../data/kpDB/";
 #endif
 
-    bfs::path kplco2(data_path + "kpl_co2.dat");
-    bfs::path kplh2o(data_path + "kpl_h2o.dat");
-    bfs::path kplco(data_path + "kpl_co.dat");
-
-    bfs::exists(kplco2);
-    bfs::exists(kplh2o);
-    bfs::exists(kplco);
-
-    bio::stream<bio::mapped_file_source> dataco2(kplco2);
-    bio::stream<bio::mapped_file_source> datah2o(kplh2o);
-    bio::stream<bio::mapped_file_source> dataco(kplco);
-
-    GpuArray<Real, 126ul> kpco2;
-    GpuArray<Real, 126ul> kph2o;
-    GpuArray<Real, 126ul> kpco;
-
-    size_t i = 0;
-
-    for (float T_temp, kp_temp; dataco2 >> T_temp >> kp_temp;)
-    {
-        kpco2[i] = kp_temp;
-    }
-
-    for (float T_temp, kp_temp; datah2o >> T_temp >> kp_temp;)
-    {
-        kph2o[i] = kp_temp;
-    }
-
-    for (float T_temp, kp_temp; dataco >> T_temp >> kp_temp;)
-    {
-        kpco[i] = kp_temp;
-    }
-
+    using PeleRad::PlanckMean;
     using PeleRad::RadProp::getRadProp;
+
+    PlanckMean radprop(data_path);
 
     ParmParse pp;
     std::vector<int> npts { 128, 128, 128 };
@@ -132,6 +96,10 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     MultiFab mass_frac_rad(ba, dm, num_rad_species, num_grow);
     MultiFab temperature(ba, dm, 1, num_grow);
     MultiFab pressure(ba, dm, 1, num_grow);
+
+    const auto& kpco2 = radprop.kpco2();
+    const auto& kph2o = radprop.kph2o();
+    const auto& kpco  = radprop.kpco();
 
     MultiFab absc(ba, dm, 1, num_grow);
 
