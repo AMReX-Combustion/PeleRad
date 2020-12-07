@@ -18,8 +18,6 @@ BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
 
 #ifdef DATABASE_PATH
     data_path = DATABASE_PATH;
-
-    std::cout << data_path << std::endl;
 #else
     data_path = "../../data/kpDB/";
 #endif
@@ -37,8 +35,8 @@ BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
 
     for (float T_temp, kp_temp; data >> T_temp >> kp_temp;)
     {
-        std::cout << "Reading from file:" << T_temp << " " << kp_temp
-                  << " i=" << i << '\n';
+        // std::cout << "Reading from file:" << T_temp << " " << kp_temp
+        //          << " i=" << i << '\n';
         T[i]     = T_temp;
         kpco2[i] = kp_temp;
         i++;

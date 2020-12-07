@@ -1,3 +1,6 @@
+#include <boost/filesystem.hpp>
+#include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <boost/test/unit_test.hpp>
 #define BOOST_TEST_MODULE amrexgetradprop
 
@@ -11,22 +14,26 @@
 
 using namespace amrex;
 
+namespace but = boost::unit_test;
+namespace bfs = boost::filesystem;
+namespace bio = boost::iostreams;
+
 AMREX_GPU_HOST_DEVICE
-inline void initGasField(int i, int j, int k, const Array4<amrex::Real>& mf,
-    const Array4<amrex::Real>& temp, const Array4<amrex::Real>& pressure,
-    const GpuArray<amrex::Real, 3ul>& dx, const GpuArray<amrex::Real, 3ul>& plo,
-    const GpuArray<amrex::Real, 3ul>& phi) noexcept
+inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
+    const Array4<Real>& temp, const Array4<Real>& pressure,
+    const GpuArray<Real, 3ul>& dx, const GpuArray<Real, 3ul>& plo,
+    const GpuArray<Real, 3ul>& phi) noexcept
 {
     constexpr int num_rad_species = 3;
-    Real dTemp                    = 5.0;
-    Real dPres                    = 0.05;
+    constexpr Real dTemp          = 5.0;
+    constexpr Real dPres          = 0.05;
     Real x                        = plo[0] + (i + 0.5) * dx[0];
     Real y                        = plo[1] + (j + 0.5) * dx[1];
     Real pi                       = 4.0 * std::atan(1.0);
-    GpuArray<amrex::Real, 3> LL;
-    GpuArray<amrex::Real, 3> PP;
-    GpuArray<amrex::Real, 3> Y_lo;
-    GpuArray<amrex::Real, 3> Y_hi;
+    GpuArray<Real, 3> LL;
+    GpuArray<Real, 3> PP;
+    GpuArray<Real, 3> Y_lo;
+    GpuArray<Real, 3> Y_hi;
 
     for (int n = 0; n < num_rad_species; n++)
     {
@@ -50,6 +57,47 @@ inline void initGasField(int i, int j, int k, const Array4<amrex::Real>& mf,
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 {
+    std::string data_path;
+
+#ifdef DATABASE_PATH
+    data_path = DATABASE_PATH;
+#else
+    data_path = "../../data/kpDB/";
+#endif
+
+    bfs::path kplco2(data_path + "kpl_co2.dat");
+    bfs::path kplh2o(data_path + "kpl_h2o.dat");
+    bfs::path kplco(data_path + "kpl_co.dat");
+
+    bfs::exists(kplco2);
+    bfs::exists(kplh2o);
+    bfs::exists(kplco);
+
+    bio::stream<bio::mapped_file_source> dataco2(kplco2);
+    bio::stream<bio::mapped_file_source> datah2o(kplh2o);
+    bio::stream<bio::mapped_file_source> dataco(kplco);
+
+    GpuArray<Real, 126ul> kpco2;
+    GpuArray<Real, 126ul> kph2o;
+    GpuArray<Real, 126ul> kpco;
+
+    size_t i = 0;
+
+    for (float T_temp, kp_temp; dataco2 >> T_temp >> kp_temp;)
+    {
+        kpco2[i] = kp_temp;
+    }
+
+    for (float T_temp, kp_temp; datah2o >> T_temp >> kp_temp;)
+    {
+        kph2o[i] = kp_temp;
+    }
+
+    for (float T_temp, kp_temp; dataco >> T_temp >> kp_temp;)
+    {
+        kpco[i] = kp_temp;
+    }
+
     using PeleRad::RadProp::getRadProp;
 
     ParmParse pp;
@@ -99,7 +147,7 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 
         ParallelFor(gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
             initGasField(i, j, k, Yrad, T, P, dx, plo, phi);
-            getRadProp(i, j, k, Yrad, T, P, kappa);
+            getRadProp(i, j, k, Yrad, T, P, kappa, kpco2, kph2o, kpco);
         });
     }
 

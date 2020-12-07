@@ -14,8 +14,8 @@ add_test(NAME PeleRad_BoostReadDatabase_Test COMMAND ./PeleRad_BoostReadDatabase
 
 add_executable(PeleRad_AmrexGetRadProp.exe tstAmrexGetRadProp.cpp ut_main.cpp)
 target_include_directories(PeleRad_AmrexGetRadProp.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base)
-target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
-target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK)
+target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
 if(PELERAD_ENABLE_MPI)

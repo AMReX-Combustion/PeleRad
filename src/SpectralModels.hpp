@@ -29,15 +29,15 @@ namespace RadProp
 
         amrex::Real TindexReal = (T - 300.0) / 20.0;
         amrex::Real TindexInte = floor((T - 300.0) / 20.0);
-        TindexL                = (int)TindexInte;
+        TindexL                = static_cast<int>(TindexInte);
         weight                 = TindexReal - TindexInte;
         assert(weight <= 1 && weight > 0);
     }
 
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    amrex::Real interpk(
-        const int& TindexL, const amrex::Real& weight, amrex::Real* k)
+    amrex::Real interpk(const int& TindexL, const amrex::Real& weight,
+        const amrex::GpuArray<amrex::Real, 126ul>& k)
     {
         return (1.0 - weight) * k[TindexL] + weight * k[TindexL + 1];
     }
@@ -48,7 +48,10 @@ namespace RadProp
         const amrex::Array4<const amrex::Real>& mf,
         const amrex::Array4<const amrex::Real>& temp,
         const amrex::Array4<const amrex::Real>& pressure,
-        const amrex::Array4<amrex::Real>& absc)
+        const amrex::Array4<amrex::Real>& absc,
+        const amrex::GpuArray<amrex::Real, 126ul>& kdataco2,
+        const amrex::GpuArray<amrex::Real, 126ul>& kdatah2o,
+        const amrex::GpuArray<amrex::Real, 126ul>& kdataco)
     {
         int TindexL        = 0;
         amrex::Real weight = 1.0;
@@ -56,13 +59,9 @@ namespace RadProp
         interpT(temp(i, j, k), TindexL, weight);
         // std::cout << "output=" << TindexL << "," << weight << std::endl;
 
-        // amrex::Real kp_co2 = interpk(kdataco2);
-        // amrex::Real kp_h2o = interpk(kdatah2o);
-        // amrex::Real kp_co  = interpk(kdataco);
-
-        amrex::Real kp_co2 = 1.0;
-        amrex::Real kp_h2o = 0.5;
-        amrex::Real kp_co  = 0.3;
+        amrex::Real kp_co2 = interpk(TindexL, weight, kdataco2);
+        amrex::Real kp_h2o = interpk(TindexL, weight, kdatah2o);
+        amrex::Real kp_co  = interpk(TindexL, weight, kdataco);
 
         absc(i, j, k) = mf(i, j, k, 0) * kp_co2 + mf(i, j, k, 1) * kp_h2o
                         + mf(i, j, k, 2) * kp_co;
