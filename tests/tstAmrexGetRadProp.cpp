@@ -6,6 +6,7 @@
 
 #include <AMReX_MultiFab.H>
 #include <AMReX_ParmParse.H>
+#include <AMReX_PlotFileUtil.H>
 
 #include <iostream>
 #include <vector>
@@ -51,6 +52,8 @@ inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 {
+    constexpr bool WRITE = false;
+
     std::string data_path;
 
 #ifdef DATABASE_PATH
@@ -62,12 +65,20 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     using PeleRad::PlanckMean;
     using PeleRad::RadProp::getRadProp;
 
+    Vector<int> is_periodic(AMREX_SPACEDIM, 1);
+
     PlanckMean radprop(data_path);
 
     ParmParse pp;
     std::vector<int> npts { 128, 128, 128 };
     Box domain(IntVect(D_DECL(0, 0, 0)),
         IntVect(D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1)));
+    RealBox real_box(
+        { D_DECL(0.0, 0.0, 0.0) }, { D_DECL(static_cast<double>(npts[0]) - 1.0,
+                                       static_cast<double>(npts[1]) - 1.0,
+                                       static_cast<double>(npts[2]) - 1.0) });
+    Geometry geom;
+    geom.define(domain, &real_box, CoordSys::cartesian, is_periodic.data());
 
     GpuArray<Real, 3ul> plo;
     GpuArray<Real, 3ul> phi;
@@ -85,8 +96,6 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     ba.maxSize(max_size);
 
     ParmParse ppa("amr");
-    std::string pltfile("plt");
-    ppa.query("plot_file", pltfile);
 
     DistributionMapping dm { ba };
 
@@ -119,13 +128,19 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
         });
     }
 
-    /*
-        MultiFab VarPltInit(ba, dm, num_rad_species, num_grow);
-        MultiFab::Copy(VarPltInit, mass_frac_rad, 0, 0, num_rad_species,
-       num_grow); MultiFab::Copy(VarPltInit, temperature, 0, num_rad_species, 1,
-       num_grow); MultiFab::Copy(VarPltInit, pressure, 0, num_rad_species, 1,
-       num_grow); std::string initfile = amrex::Concatenate(pltfile, 99);
-        PlotFileFromMF(VarPltInit, initfile);
-    */
+    if (WRITE)
+    {
+        std::string pltfile("plt");
+        ppa.query("plot_file", pltfile);
+
+        MultiFab VarPlt(ba, dm, num_rad_species, num_grow);
+        MultiFab::Copy(VarPlt, mass_frac_rad, 0, 0, num_rad_species, num_grow);
+        MultiFab::Copy(VarPlt, temperature, 0, 1, 1, num_grow);
+        MultiFab::Copy(VarPlt, pressure, 0, 2, 1, num_grow);
+        std::string initfile = amrex::Concatenate(pltfile, 99);
+        WriteSingleLevelPlotfile(
+            pltfile, VarPlt, { "Y", "T", "P" }, geom, 0.0, 0);
+    }
+
     BOOST_TEST(true);
 }
