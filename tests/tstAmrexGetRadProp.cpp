@@ -20,8 +20,8 @@ inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
     const GpuArray<Real, 3ul>& phi) noexcept
 {
     constexpr int num_rad_species = 3;
-    constexpr Real dTemp          = 5.0;
-    constexpr Real dPres          = 0.05;
+    constexpr Real dTemp          = 1200;
+    constexpr Real dPres          = 1.0;
     Real x                        = plo[0] + (i + 0.5) * dx[0];
     Real y                        = plo[1] + (j + 0.5) * dx[1];
     Real pi                       = 4.0 * std::atan(1.0);
@@ -33,16 +33,18 @@ inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
     for (int n = 0; n < num_rad_species; n++)
     {
         LL[n] = phi[n] - plo[n];
-        PP[n] = LL[n] / 4.0;
-    }
-    for (int n = 0; n < num_rad_species; n++)
-    {
-        Y_lo[n] = 0.0;
-        Y_hi[n] = 0.3 / num_rad_species;
+        PP[n] = LL[n] / 2.0;
     }
 
-    temp(i, j, k)     = 500.0 + dTemp * std::sin(2.0 * pi * y / PP[1]);
-    pressure(i, j, k) = 1.0 + dPres * std::sin(2.0 * pi * y / PP[1]);
+    Y_lo[0] = 0.0;
+    Y_hi[0] = 0.25;
+    Y_lo[1] = 0.0;
+    Y_hi[1] = 0.125;
+    Y_lo[2] = 0.0;
+    Y_hi[2] = 0.1;
+
+    temp(i, j, k)     = 1500 + dTemp * std::sin(2.0 * pi * y / PP[1]);
+    pressure(i, j, k) = 50.0 + dPres * std::cos(2.0 * pi * y / PP[1]);
 
     for (int n = 0; n < num_rad_species; n++)
     {
@@ -133,13 +135,14 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
         std::string pltfile("plt");
         ppa.query("plot_file", pltfile);
 
-        MultiFab VarPlt(ba, dm, num_rad_species, num_grow);
+        MultiFab VarPlt(ba, dm, num_rad_species + 3, num_grow);
         MultiFab::Copy(VarPlt, mass_frac_rad, 0, 0, num_rad_species, num_grow);
-        MultiFab::Copy(VarPlt, temperature, 0, 1, 1, num_grow);
-        MultiFab::Copy(VarPlt, pressure, 0, 2, 1, num_grow);
+        MultiFab::Copy(VarPlt, temperature, 0, 3, 1, num_grow);
+        MultiFab::Copy(VarPlt, pressure, 0, 4, 1, num_grow);
+        MultiFab::Copy(VarPlt, absc, 0, 5, 1, num_grow);
         std::string initfile = amrex::Concatenate(pltfile, 99);
-        WriteSingleLevelPlotfile(
-            pltfile, VarPlt, { "Y", "T", "P" }, geom, 0.0, 0);
+        WriteSingleLevelPlotfile(pltfile, VarPlt,
+            { "Y_CO2", "Y_H2O", "Y_CO", "T", "P", "Kappa" }, geom, 0.0, 0);
     }
 
     BOOST_TEST(true);
