@@ -24,10 +24,9 @@ private:
     amrex::GpuArray<amrex::Real, 126ul> kpsoot_;
 
 public:
-    AMREX_GPU_HOST_DEVICE
     PlanckMean() = default;
 
-    AMREX_GPU_HOST_DEVICE
+    AMREX_GPU_HOST
     PlanckMean(std::string data_path)
     {
         bfs_path kplco2(data_path + "kpl_co2.dat");
