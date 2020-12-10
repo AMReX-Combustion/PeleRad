@@ -1,4 +1,6 @@
+#include "BoostTest_CUDA_clang_workarounds.hpp"
 #include <boost/test/unit_test.hpp>
+
 #define BOOST_TEST_MODULE amrexgetradprop
 
 #include <PlanckMean.hpp>

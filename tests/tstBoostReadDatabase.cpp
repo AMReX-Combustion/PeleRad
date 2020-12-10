@@ -1,7 +1,9 @@
+#include "BoostTest_CUDA_clang_workarounds.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/test/unit_test.hpp>
+
 #define BOOST_TEST_MODULE boostreaddatabase
 #include <iostream>
 #include <vector>
