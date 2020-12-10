@@ -1,4 +1,3 @@
-#include "BoostTest_CUDA_clang_workarounds.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
