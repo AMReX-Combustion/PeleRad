@@ -125,7 +125,7 @@ jobs:
             cuda-minimal-build-11-2 \
             cuda-nvml-dev-11-2 \
             cuda-nvtx-11-2 \
-            libcurand-dev-11-2Error_device
+            libcurand-dev-11-2
         sudo ln -s cuda-11.2 /usr/local/cuda
 #        sudo apt install nvidia-cuda-dev
 #        sudo apt install nvidia-cuda-toolkit
