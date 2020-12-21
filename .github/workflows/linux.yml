@@ -62,7 +62,7 @@ jobs:
     - name: dependencies
       run: |
         # mpi
-        sudo apt install libopenmpi
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
@@ -106,7 +106,7 @@ jobs:
     - name: dependencies
       run: |
         # mpi
-        sudo apt install libopenmpi
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
