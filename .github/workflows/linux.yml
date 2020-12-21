@@ -23,8 +23,9 @@ jobs:
         #sudo apt-get -y install libboost-all-dev
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
+        sudo apt-get -y install \ 
+        libboost1.68 \
+        libboost1.68-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -65,8 +66,9 @@ jobs:
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
+        sudo apt-get -y install \
+        libboost1.68 \
+        libboost1.68-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -107,9 +109,10 @@ jobs:
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
-        nvidia-cuda-dev
+        sudo apt-get -y install \
+        libboost1.68 \
+        libboost1.68-dev \
+        nvidia-cuda-dev \
         nvidia-cuda-toolkit
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
