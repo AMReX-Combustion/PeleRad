@@ -112,8 +112,23 @@ jobs:
         sudo apt-get update
         sudo apt install libboost1.68
         sudo apt install libboost1.68-dev
-        sudo apt install nvidia-cuda-dev
-        sudo apt install nvidia-cuda-toolkit
+        # cuda
+        sudo wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+        sudo apt-key add 7fa2af80.pub
+        echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" \
+            | sudo tee /etc/apt/sources.list.d/cuda.list
+        sudo apt-get update
+        sudo apt-get install -y \
+            cuda-command-line-tools-11-2 \
+            cuda-compiler-11-2 \
+            cuda-cupti-dev-11-2 \
+            cuda-minimal-build-11-2 \
+            cuda-nvml-dev-11-2 \
+            cuda-nvtx-11-2 \
+            libcurand-dev-11-2Error_device
+        sudo ln -s cuda-11.2 /usr/local/cuda
+#        sudo apt install nvidia-cuda-dev
+#        sudo apt install nvidia-cuda-toolkit
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -127,7 +142,7 @@ jobs:
               -DPELERAD_ENABLE_AMREX_EB=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
-              -DPELERAD_CUDA_ARCH=7.0 \
+              -DPELERAD_CUDA_ARCH=Volta \
               ${GITHUB_WORKSPACE}
     - name: build
       working-directory: ${{runner.workspace}}/build-ci
