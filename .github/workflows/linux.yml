@@ -135,14 +135,13 @@ jobs:
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
         export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
         which nvcc
-        nvidia-smi
         cmake -DCMAKE_BUILD_TYPE=Debug \
               -DPELERAD_DIM=3 \
               -DPELERAD_ENABLE_MPI=ON \
               -DPELERAD_ENABLE_CUDA=ON \
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=OFF \
-              -DPELERAD_ENABLE_TESTS=ON \
+              -DPELERAD_ENABLE_TESTS=OFF \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
               -DPELERAD_CUDA_ARCH=8.0 \
               ${GITHUB_WORKSPACE}
