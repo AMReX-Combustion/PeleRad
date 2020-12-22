@@ -19,6 +19,10 @@ option(PELERAD_ENABLE_CUDA "CUDA build" OFF)
 if(PELERAD_ENABLE_CUDA)
   enable_language(CUDA)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --expt-extended-lambda -Wno-deprecated-gpu-targets ${NVCC_ARCH_FLAGS}")
+  if(POLICY CMP0104)
+      cmake_policy(SET CMP0104 OLD)
+  endif()
+  include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
 endif()
 
 target_include_directories(PeleRad INTERFACE
@@ -51,5 +55,4 @@ if(${PELERAD_ENABLE_TESTS})
 endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/SetAmrexOptions.cmake)
-list(APPEND CMAKE_MODULE_PATH "${AMREX_HOME_DIR}/Tools/CMake")
 add_subdirectory(${AMREX_HOME_DIR} amrex)
