@@ -153,4 +153,5 @@ jobs:
     - name: test
       working-directory: ${{runner.workspace}}/build-ci
       run: |
+        nvidia-smi
         ctest --output-on-failure
