@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   serial:
     name: serial
-    runs-on: [ubuntu-20.04]
+    runs-on: [ubuntu-18.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -20,8 +20,10 @@ jobs:
     - name: dependencies
       run: |
         # boost
+        sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt-get -y install libboost-all-dev
+        sudo apt install libboost1.68
+        sudo apt install libboost1.68-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -45,7 +47,7 @@ jobs:
         ctest --output-on-failure
   mpi-cpu:
     name: mpi-cpu
-    runs-on: [ubuntu-20.04]
+    runs-on: [ubuntu-18.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -59,9 +61,13 @@ jobs:
         cmake -E make_directory ${{runner.workspace}}/deps
     - name: dependencies
       run: |
+        # mpi
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
         # boost
+        sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt-get -y install libboost-all-dev
+        sudo apt install libboost1.68
+        sudo apt install libboost1.68-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -74,6 +80,70 @@ jobs:
               -DPELERAD_ENABLE_AMREX_EB=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
+              ${GITHUB_WORKSPACE}
+    - name: build
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        make -j 8
+    - name: test
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        ctest --output-on-failure
+  mpi-cuda:
+    name: mpi-cuda
+    runs-on: [ubuntu-18.04]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: info
+      run: |
+        g++ -v
+        cmake --version
+    - name: setup
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build-ci
+        cmake -E make_directory ${{runner.workspace}}/deps
+    - name: dependencies
+      run: |
+        # mpi
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
+        # boost
+        sudo add-apt-repository ppa:mhier/libboost-latest
+        sudo apt-get update
+        sudo apt install libboost1.68
+        sudo apt install libboost1.68-dev
+        # cuda
+        sudo wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+        sudo apt-key add 7fa2af80.pub
+        echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" \
+            | sudo tee /etc/apt/sources.list.d/cuda.list
+        sudo apt-get update
+        sudo apt-get install -y \
+            cuda-command-line-tools-11-2 \
+            cuda-compiler-11-2 \
+            cuda-cupti-dev-11-2 \
+            cuda-minimal-build-11-2 \
+            cuda-nvml-dev-11-2 \
+            cuda-nvtx-11-2 \
+            libcurand-dev-11-2
+        sudo ln -s cuda-11.2 /usr/local/cuda
+        # AMREX
+        git clone https://github.com/wjge/amrex.git ${{runner.workspace}}/deps/amrex
+    - name: configure
+      working-directory: ${{runner.workspace}}/build-ci
+      run: |
+        export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+        export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+        which nvcc
+        cmake -DCMAKE_BUILD_TYPE=Debug \
+              -DPELERAD_DIM=3 \
+              -DPELERAD_ENABLE_MPI=ON \
+              -DPELERAD_ENABLE_CUDA=ON \
+              -DPELERAD_ENABLE_OPENMP=OFF \
+              -DPELERAD_ENABLE_AMREX_EB=OFF \
+              -DPELERAD_ENABLE_TESTS=OFF \
+              -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
+              -DPELERAD_CUDA_ARCH=8.0 \
               ${GITHUB_WORKSPACE}
     - name: build
       working-directory: ${{runner.workspace}}/build-ci
