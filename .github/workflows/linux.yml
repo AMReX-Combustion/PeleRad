@@ -128,7 +128,7 @@ jobs:
             libcurand-dev-11-2
         sudo ln -s cuda-11.2 /usr/local/cuda
         # AMREX
-        git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
+        git clone https://github.com/wjge/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
       working-directory: ${{runner.workspace}}/build-ci
       run: |
