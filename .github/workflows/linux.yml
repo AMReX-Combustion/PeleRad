@@ -141,7 +141,8 @@ jobs:
               -DPELERAD_ENABLE_CUDA=ON \
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=OFF \
-              -DPELERAD_ENABLE_TESTS=OFF \
+              -DCMAKE_CXX_STANDARD=17 \
+              -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
               -DPELERAD_CUDA_ARCH=8.0 \
               ${GITHUB_WORKSPACE}
@@ -149,7 +150,3 @@ jobs:
       working-directory: ${{runner.workspace}}/build-ci
       run: |
         make -j 8
-    - name: test
-      working-directory: ${{runner.workspace}}/build-ci
-      run: |
-        ctest --output-on-failure
