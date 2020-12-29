@@ -119,13 +119,22 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/cuda.list
         sudo apt-get update
         sudo apt-get install -y \
-            nvidia-cuda-dev \
-            nvidia-cuda-toolkit
+            cuda-command-line-tools-11-2 \
+            cuda-compiler-11-2 \
+            cuda-cupti-dev-11-2 \
+            cuda-minimal-build-11-2 \
+            cuda-nvml-dev-11-2 \
+            cuda-nvtx-11-2 \
+            libcurand-dev-11-2
+        sudo ln -s cuda-11.2 /usr/local/cuda
         # AMREX
         git clone https://github.com/wjge/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
       working-directory: ${{runner.workspace}}/build-ci
       run: |
+        export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+        export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+        which nvcc
         cmake -DCMAKE_BUILD_TYPE=Debug \
               -DPELERAD_DIM=3 \
               -DPELERAD_ENABLE_MPI=ON \
@@ -134,13 +143,9 @@ jobs:
               -DPELERAD_ENABLE_AMREX_EB=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
-              -DPELERAD_CUDA_ARCH=6.0 \
+              -DPELERAD_CUDA_ARCH=8.0 \
               ${GITHUB_WORKSPACE}
     - name: build
       working-directory: ${{runner.workspace}}/build-ci
       run: |
         make -j 8
-    - name: test
-      working-directory: ${{runner.workspace}}/build-ci
-      run: |
-        ctest --output-on-failure
