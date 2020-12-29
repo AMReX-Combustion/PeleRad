@@ -91,7 +91,7 @@ jobs:
         ctest --output-on-failure
   mpi-cuda:
     name: mpi-cuda
-    runs-on: [ubuntu-20.04]
+    runs-on: [ubuntu-18.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -145,7 +145,7 @@ jobs:
               -DCMAKE_CXX_STANDARD=17 \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
-              -DPELERAD_CUDA_ARCH=8.0 \
+              -DPELERAD_CUDA_ARCH=6.0 \
               ${GITHUB_WORKSPACE}
     - name: build
       working-directory: ${{runner.workspace}}/build-ci
