@@ -18,6 +18,12 @@ target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_te
 target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
+add_executable(PeleRad_POneSolve.exe tstPOneSolve.cpp ut_main.cpp)
+target_include_directories(PeleRad_POneSolve.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG  ${AMREX_HOME_DIR}/Src/EB)
+target_link_libraries(PeleRad_POneSolve.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
+target_compile_definitions(PeleRad_POneSolve.exe PRIVATE BOOST_TEST_DYN_LINK)
+add_test(NAME PeleRad_POneSolve_Test COMMAND ./PeleRad_POneSolve.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSolve")
+
 if(PELERAD_ENABLE_MPI)
 add_executable(PeleRad_AmrexParallelFor.exe tstAmrexParallelFor.cpp ut_main.cpp)
 target_include_directories(PeleRad_AmrexParallelFor.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base)
@@ -36,6 +42,7 @@ if (PELERAD_ENABLE_CUDA)
   setup_target_for_cuda_compilation(PeleRad_AmrexParallelFor.exe)
   setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
   setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
+  setup_target_for_cuda_compilation(PeleRad_POneSolve.exe)
 endif ()
 
 
