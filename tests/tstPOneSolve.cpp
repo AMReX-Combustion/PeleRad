@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(p1_solve)
     PeleRad::MLMGParam mlmgpp(pp);
     PeleRad::POneEquation rte(amrpp, mlmgpp);
     rte.solve();
-    // rte.write();
+    rte.write();
 
     BOOST_TEST(true);
 }

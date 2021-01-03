@@ -35,6 +35,7 @@ jobs:
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=ON \
               -DPELERAD_ENABLE_LINEARSOLVERS=ON \
+              -DPELERAD_ENABLE_HYPRE=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
               ${GITHUB_WORKSPACE}
@@ -80,6 +81,7 @@ jobs:
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=ON \
               -DPELERAD_ENABLE_LINEARSOLVERS=ON \
+              -DPELERAD_ENABLE_HYPRE=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
               ${GITHUB_WORKSPACE}
@@ -144,6 +146,7 @@ jobs:
               -DPELERAD_ENABLE_OPENMP=OFF \
               -DPELERAD_ENABLE_AMREX_EB=ON \
               -DPELERAD_ENABLE_LINEARSOLVERS=ON \
+              -DPELERAD_ENABLE_HYPRE=OFF \
               -DCMAKE_CXX_STANDARD=17 \
               -DPELERAD_ENABLE_TESTS=ON \
               -DAMREX_HOME_DIR=${{runner.workspace}}/deps/amrex \
