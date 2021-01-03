@@ -342,16 +342,16 @@ public:
             mlmg.setBottomTolerance(bottom_reltol);
             mlmg.setVerbose(verbose);
             mlmg.setBottomVerbose(bottom_verbose);
-
-            /*if (use_hypre)
-            {
-                mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
-            }
-            else if (use_petsc)
-            {
-                mlmg.setBottomSolver(MLMG::BottomSolver::petsc);
-            }*/
-
+            /*
+                        if (use_hypre)
+                        {
+                            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+                        }
+                        else if (use_petsc)
+                        {
+                            mlmg.setBottomSolver(MLMG::BottomSolver::petsc);
+                        }
+            */
             const Real tol_rel = reltol;
             const Real tol_abs = 0.0;
             mlmg.solve({ &phi_[ilev] }, { &rhs_[ilev] }, tol_rel, tol_abs);

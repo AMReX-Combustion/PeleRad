@@ -11,7 +11,9 @@ BOOST_AUTO_TEST_CASE(p1_solve)
     amrex::ParmParse pp;
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
-    PeleRad::POneEquation(amrpp, mlmgpp);
+    PeleRad::POneEquation rte(amrpp, mlmgpp);
+    rte.solve();
+    // rte.write();
 
     BOOST_TEST(true);
 }
