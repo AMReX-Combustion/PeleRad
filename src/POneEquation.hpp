@@ -344,8 +344,9 @@ public:
             mlmg.setBottomVerbose(bottom_verbose);
 
 #ifdef PELERAD_ENABLE_HYPRE
-            std::cout << "HYPRE solver is used." mlmg.setBottomSolver(
-                MLMG::BottomSolver::hypre);
+            std::cout << "HYPRE solver is used."
+                      << "./";
+            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
 #endif
 
             const Real tol_rel = reltol;
