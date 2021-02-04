@@ -20,8 +20,6 @@ public:
     int prob_type_;
     std::string plot_file_name_;
 
-    amrex::Vector<amrex::Real> scalars_;
-
     AMRParam() = default;
 
     AMREX_GPU_HOST
@@ -37,12 +35,6 @@ public:
             "max_level has to be either 0 or 1");
 
         pp.query("plot_file_name", plot_file_name_);
-
-        scalars_.resize(2);
-        scalars_[0] = 1.0;
-        scalars_[1] = 1.0;
-
-        pp.queryarr("scalars", scalars_);
     }
 };
 }
