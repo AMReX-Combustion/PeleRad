@@ -125,8 +125,8 @@ public:
 
         const int nlevels = geom_.size();
 
-        double const a = 1.0e-3;
-        double const b = 1.0;
+        double const a = 1.0;
+        double const b = 1.0 / 3.0;
 
         if (composite_solve)
         {

@@ -6,13 +6,11 @@
 #include <MLMGParam.hpp>
 #include <POneEquation.hpp>
 
-#include <prob_par.H>
-
 void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
     Vector<MultiFab>& beta, Vector<MultiFab>& rhs, Vector<MultiFab>& exact)
 {
     Real a                  = 1e-3;
-    Real b                  = 1.0;
+    Real b                  = 1.0 / 3.0;
     Real sigma              = 10.0;
     Real w                  = 0.05;
     MLLinOp::BCType bc_type = MLLinOp::BCType::Dirichlet;
