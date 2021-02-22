@@ -42,33 +42,7 @@ public:
           mlmgpp_(mlmgpp),
           geom_(geom),
           grids_(grids) {
-              // initData();
           };
-
-    AMREX_GPU_HOST
-    void initData()
-    {
-        int nlevels = geom_.size();
-
-        dmap_.resize(nlevels);
-        phi_.resize(nlevels);
-        phiexact_.resize(nlevels);
-        rhs_.resize(nlevels);
-        acoef_.resize(nlevels);
-        bcoef_.resize(nlevels);
-
-        for (int ilev = 0; ilev < nlevels; ++ilev)
-        {
-            dmap_[ilev].define(grids_[ilev]);
-            phi_[ilev].define(grids_[ilev], dmap_[ilev], 1, 1);
-            phiexact_[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
-            rhs_[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
-            acoef_[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
-            bcoef_[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
-
-            phi_[ilev].setVal(0.0);
-        }
-    };
 
     AMREX_GPU_HOST
     void solve(Vector<MultiFab>& soln, Vector<MultiFab> const& alpha,
@@ -104,6 +78,7 @@ public:
 
         std::array<LinOpBCType, AMREX_SPACEDIM> mlmg_lobc;
         std::array<LinOpBCType, AMREX_SPACEDIM> mlmg_hibc;
+
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
         {
             if (geom_[0].isPeriodic(idim))
@@ -228,14 +203,12 @@ public:
     AMREX_GPU_HOST
     void write(Vector<MultiFab>& soln, Vector<MultiFab> const& alpha,
         Vector<MultiFab> const& beta, Vector<MultiFab> const& rhs,
-        Vector<MultiFab> const& exact)
+        Vector<MultiFab> const& exact, bool const unittest)
     {
         auto nlevels        = geom_.size();
         auto plot_file_name = amrpp_.plot_file_name_;
         auto ref_ratio      = amrpp_.ref_ratio_;
 
-        // will add flag to turn this off on ci tests
-        bool unittest = false;
         Vector<MultiFab> plotmf(nlevels);
 
         if (!unittest)

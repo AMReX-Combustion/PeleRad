@@ -222,9 +222,11 @@ BOOST_AUTO_TEST_CASE(p1_solve)
         grids[ilev].maxSize(max_grid_size);
     }
 
-    amrex::RealBox rb { AMREX_D_DECL(0.0, 0.0, 0.0),
+    amrex::RealBox rb { AMREX_D_DECL(-1.0, -1.0, -1.0),
         AMREX_D_DECL(1.0, 1.0, 1.0) };
+
     const int coord = 0;
+
     std::array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
 
     auto bc_type = MLLinOp::BCType::Dirichlet;
@@ -235,6 +237,7 @@ BOOST_AUTO_TEST_CASE(p1_solve)
     }
 
     geom[0].define(domain0, &rb, coord, is_periodic.data());
+
     for (int ilev = 1; ilev < grids.size(); ++ilev)
     {
         domain0.refine(amrpp.ref_ratio_);
@@ -268,7 +271,10 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     rte.solve(soln, alpha, beta, rhs, exact);
 
-    rte.write(soln, alpha, beta, rhs, exact);
+    //turn off write for unit tests
+    bool unittest = true;
+
+    rte.write(soln, alpha, beta, rhs, exact, unittest);
 
     BOOST_TEST(true);
 }
