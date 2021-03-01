@@ -201,11 +201,12 @@ BOOST_AUTO_TEST_CASE(p1_solve)
               << ", max_grid_siz=" << max_grid_size
               << ", ref_ratio=" << ref_ratio << "\n";
 
-    Vector<amrex::Geometry> geom;
-    Vector<BoxArray> grids;
+    Vector<Geometry> geom(nlevels);
+    Vector<BoxArray> grids(nlevels);
+    Vector<DistributionMapping> dmap(nlevels);
 
-    geom.resize(nlevels);
-    grids.resize(nlevels);
+    // geom.resize(nlevels);
+    // grids.resize(nlevels);
 
     Box domain0(IntVect { AMREX_D_DECL(0, 0, 0) },
         IntVect { AMREX_D_DECL(n_cell - 1, n_cell - 1, n_cell - 1) });
@@ -220,6 +221,11 @@ BOOST_AUTO_TEST_CASE(p1_solve)
         ba0.refine(ref_ratio);
         grids[ilev] = ba0;
         grids[ilev].maxSize(max_grid_size);
+    }
+
+    for (int ilev = 0; ilev < nlevels; ++ilev)
+    {
+        dmap[ilev].define(grids[ilev]);
     }
 
     amrex::RealBox rb { AMREX_D_DECL(-1.0, -1.0, -1.0),
@@ -252,15 +258,15 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
-        DistributionMapping dm { grids[ilev] };
-        soln[ilev].define(grids[ilev], dm, 1, 1);
-        exact[ilev].define(grids[ilev], dm, 1, 0);
-        alpha[ilev].define(grids[ilev], dm, 1, 0);
-        beta[ilev].define(grids[ilev], dm, 1, 1);
-        rhs[ilev].define(grids[ilev], dm, 1, 0);
+        // DistributionMapping dm { grids[ilev] };
+        soln[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        exact[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        alpha[ilev].define(grids[ilev], dmap[ilev], 1, 0);
+        beta[ilev].define(grids[ilev], dmap[ilev], 1, 1);
+        rhs[ilev].define(grids[ilev], dmap[ilev], 1, 0);
     }
 
-    PeleRad::POneEquation rte(amrpp, mlmgpp, geom, grids);
+    PeleRad::POneEquation rte(amrpp, mlmgpp, geom, grids, dmap);
 
     init_prob(geom, alpha, beta, rhs, exact);
 
@@ -271,8 +277,8 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     rte.solve(soln, alpha, beta, rhs, exact);
 
-    //turn off write for unit tests
-    bool unittest = true;
+    // turn off write for unit tests
+    bool unittest = false;
 
     rte.write(soln, alpha, beta, rhs, exact, unittest);
 

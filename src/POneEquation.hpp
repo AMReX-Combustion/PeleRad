@@ -37,12 +37,13 @@ public:
 
     AMREX_GPU_HOST
     POneEquation(const AMRParam& amrpp, const MLMGParam& mlmgpp,
-        const Vector<Geometry> geom, const Vector<BoxArray> grids)
+        Vector<Geometry> const geom, Vector<BoxArray> const grids,
+        Vector<DistributionMapping> const dmap)
         : amrpp_(amrpp),
           mlmgpp_(mlmgpp),
           geom_(geom),
-          grids_(grids) {
-          };
+          grids_(grids),
+          dmap_(dmap) {};
 
     AMREX_GPU_HOST
     void solve(Vector<MultiFab>& soln, Vector<MultiFab> const& alpha,
@@ -105,20 +106,16 @@ public:
 
         if (composite_solve)
         {
-            Vector<BoxArray> grids;
-            Vector<DistributionMapping> dmap;
             Vector<MultiFab*> psoln;
             Vector<MultiFab const*> prhs;
 
             for (int ilev = 0; ilev < nlevels; ++ilev)
             {
-                grids.push_back(soln[ilev].boxArray());
-                dmap.push_back(soln[ilev].DistributionMap());
                 psoln.push_back(&(soln[ilev]));
                 prhs.push_back(&(rhs[ilev]));
             }
 
-            MLABecLaplacian mlabec(geom_, grids, dmap, info);
+            MLABecLaplacian mlabec(geom_, grids_, dmap_, info);
             mlabec.setMaxOrder(linop_maxorder);
             // BC
             mlabec.setDomainBC({ mlmg_lobc[0], mlmg_lobc[1], mlmg_lobc[2] },
@@ -205,31 +202,29 @@ public:
         Vector<MultiFab> const& beta, Vector<MultiFab> const& rhs,
         Vector<MultiFab> const& exact, bool const unittest)
     {
-        auto nlevels        = geom_.size();
+        auto max_level      = amrpp_.max_level_;
         auto plot_file_name = amrpp_.plot_file_name_;
         auto ref_ratio      = amrpp_.ref_ratio_;
 
-        Vector<MultiFab> plotmf(nlevels);
+        Vector<MultiFab> plotmf(max_level + 1);
 
         if (!unittest)
         {
-            for (int ilev = 0; ilev < nlevels; ++ilev)
+            for (int ilev = 0; ilev < max_level; ++ilev)
             {
-                plotmf[ilev].define(
-                    soln[ilev].boxArray(), soln[ilev].DistributionMap(), 6, 0);
+                plotmf[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
                 MultiFab::Copy(plotmf[ilev], soln[ilev], 0, 0, 1, 0);
-                MultiFab::Copy(plotmf[ilev], exact[ilev], 0, 1, 1, 0);
-                MultiFab::Copy(plotmf[ilev], soln[ilev], 0, 2, 1, 0);
-                MultiFab::Copy(plotmf[ilev], alpha[ilev], 0, 3, 1, 0);
-                MultiFab::Copy(plotmf[ilev], beta[ilev], 0, 4, 1, 0);
-                MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 5, 1, 0);
-                MultiFab::Subtract(plotmf[ilev], plotmf[ilev], 1, 2, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], exact[ilev], 0, 1, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], soln[ilev], 0, 2, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], alpha[ilev], 0, 3, 1, 0);
+                /// MultiFab::Copy(plotmf[ilev], beta[ilev], 0, 4, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 5, 1, 0);
             }
-            WriteMultiLevelPlotfile(plot_file_name, nlevels,
+            WriteMultiLevelPlotfile(plot_file_name, max_level + 1,
                 amrex::GetVecOfConstPtrs(plotmf),
-                { "phi", "exact", "absolute error", "alpha", "beta", "rhs" },
-                geom_, 0.0, Vector<int>(nlevels, 0),
-                Vector<IntVect>(nlevels,
+                //{ "phi", "exact", "absolute error", "alpha", "beta", "rhs" },
+                { "phi" }, geom_, 0.0, Vector<int>(max_level + 1, 0),
+                Vector<IntVect>(max_level,
                     IntVect { AMREX_D_DECL(ref_ratio, ref_ratio, ref_ratio) }));
         }
     }
