@@ -9,11 +9,8 @@
 void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
     Vector<MultiFab>& beta, Vector<MultiFab>& rhs, Vector<MultiFab>& exact)
 {
-    Real a                  = 1e-3;
-    Real b                  = 1.0 / 3.0;
-    Real sigma              = 10.0;
-    Real w                  = 0.05;
-    MLLinOp::BCType bc_type = MLLinOp::BCType::Dirichlet;
+    // MLLinOp::BCType bc_type = MLLinOp::BCType::Dirichlet;
+    MLLinOp::BCType bc_type = MLLinOp::BCType::Neumann;
 
     char bct;
     if (bc_type == MLLinOp::BCType::Dirichlet)
@@ -31,9 +28,9 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
 
     const int nlevels = geom.size();
 
-    const double tpi = 2.0 * M_PI;
-    const double fpi = 4.0 * M_PI;
-    const double fac = 12.0 * M_PI * M_PI;
+    const double L        = 2.0;
+    const double n        = 3.0;
+    const double npioverL = n * M_PI / L;
 
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
@@ -48,8 +45,6 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
             double xc = (probhi[0] + problo[0]) / 2.0;
             double yc = (probhi[1] + problo[1]) / 2.0;
             double zc = (probhi[2] + problo[2]) / 2.0;
-
-            double theta = 0.5 * std::log(3.0) / (w + 1e-50);
 
             const Dim3 lo = amrex::lbound(bx);
             const Dim3 hi = amrex::ubound(bx);
@@ -67,14 +62,6 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
                     // double y = problo[1] + dx[1] * ((double)j + 0.5);
                     for (int i = lo.x - 1; i <= hi.x + 1; ++i)
                     {
-                        /*
-                        double x       = problo[0] + dx[0] * ((double)i + 0.5);
-                        double r       = std::sqrt((x - xc) * (x - xc)
-                                             + (y - yc) * (y - yc)
-                                             + (z - zc) * (z - zc));
-                        beta_(i, j, k) = (sigma - 1.0) / 2.0
-                                             * std::tanh(theta * (r - 0.25))
-                                         + (sigma + 1.0) / 2.0;*/
                         beta_(i, j, k) = 1.0;
                         // std::cout << beta_(i, j, k) << std::endl;
                     }
@@ -93,97 +80,41 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
                         double r = std::sqrt((x - xc) * (x - xc)
                                              + (y - yc) * (y - yc)
                                              + (z - zc) * (z - zc));
-                        double coshtheta = std::cosh(theta * (r - 0.25));
-                        double dbdrfac   = (sigma - 1.0) / 2.0
-                                         / (coshtheta * coshtheta) * theta / r;
-                        dbdrfac *= b;
 
                         alpha_(i, j, k) = 1.0;
 
-                        double coscoscostpi = std::cos(tpi * x)
-                                              * std::cos(tpi * y)
-                                              * std::cos(tpi * z);
-                        double coscoscosfpi = std::cos(fpi * x)
-                                              * std::cos(fpi * y)
-                                              * std::cos(fpi * z);
+                        double sincos
+                            = std::sin(npioverL * x) * cos(npioverL * y);
 
-                        double sincoscos
-                            = tpi * std::sin(tpi * x) * std::cos(tpi * y)
-                                  * std::cos(tpi * z)
-                              + M_PI * std::sin(fpi * x) * std::cos(fpi * y)
-                                    * std::cos(fpi * z);
+                        exact_(i, j, k) = sincos;
 
-                        double cossincos
-                            = tpi * std::cos(tpi * x) * std::sin(tpi * y)
-                                  * std::cos(tpi * z)
-                              + M_PI * std::cos(fpi * x) * std::sin(fpi * y)
-                                    * std::cos(fpi * z);
-
-                        double coscossin
-                            = tpi * std::cos(tpi * x) * std::cos(tpi * y)
-                                  * std::sin(tpi * z)
-                              + M_PI * std::cos(fpi * x) * std::cos(fpi * y)
-                                    * std::sin(fpi * z);
-
-                        double sinsinsintpi = std::sin(tpi * x)
-                                              * std::sin(tpi * y)
-                                              * std::sin(tpi * z);
-                        double sinsinsinfpi = std::sin(fpi * x)
-                                              * std::sin(fpi * y)
-                                              * std::sin(fpi * z);
-
-                        double cossinsin
-                            = -tpi * std::cos(tpi * x) * std::sin(tpi * y)
-                                  * std::sin(tpi * z)
-                              - M_PI * std::cos(fpi * x) * std::sin(fpi * y)
-                                    * std::sin(fpi * z);
-
-                        double sincossin
-                            = -tpi * std::sin(tpi * x) * std::cos(tpi * y)
-                                  * std::sin(tpi * z)
-                              - M_PI * std::sin(fpi * x) * std::cos(fpi * y)
-                                    * std::sin(fpi * z);
-
-                        double sinsincos
-                            = -tpi * std::sin(tpi * x) * std::sin(tpi * y)
-                                  * std::cos(tpi * z)
-                              - M_PI * std::sin(fpi * x) * std::sin(fpi * y)
-                                    * std::cos(fpi * z);
-
-                        if (bct == 'p' || bct == 'n')
-                        {
-                            exact_(i, j, k)
-                                = 1.0 * coscoscostpi + 0.25 * coscoscosfpi;
-                            rhs_(i, j, k)
-                                = beta_(i, j, k) * b * fac
-                                      * (coscoscostpi + coscoscosfpi)
-                                  + dbdrfac
-                                        * ((x - xc) * sincoscos
-                                            + (y - yc) * cossincos
-                                            + (z - zc) * coscossin)
-                                  + a * (coscoscostpi + 0.25 * coscoscosfpi);
-                        }
-                        else
-                        {
-                            exact_(i, j, k)
-                                = 1.0 * sinsinsintpi + 0.25 * sinsinsinfpi;
-                            rhs_(i, j, k)
-                                = beta_(i, j, k) * b * fac
-                                      * (sinsinsintpi + sinsinsinfpi)
-                                  + dbdrfac
-                                        * ((x - xc) * cossinsin
-                                            + (y - yc) * sincossin
-                                            + (z - zc) * sinsincos)
-                                  + a * (sinsinsintpi + 0.25 * sinsinsinfpi);
-                            exact_(i, j, k) = 0.0;
-                            rhs_(i, j, k)   = 1.0;
-                        }
+                        rhs_(i, j, k)
+                            = (2.0 / 3.0 * npioverL * npioverL + 1.0) * sincos;
                     }
                 }
             }
         }
     }
 };
+
+std::vector<double> check_norm(
+    Vector<MultiFab>& phi, Vector<MultiFab>& exact, int const nlevels)
+{
+    std::vector<double> eps(nlevels);
+
+    for (int ilev = 0; ilev < nlevels; ++ilev)
+    {
+        MultiFab mf(phi[ilev].boxArray(), phi[ilev].DistributionMap(), 1, 0);
+        MultiFab::Copy(mf, phi[ilev], 0, 0, 1, 0);
+
+        MultiFab::Subtract(mf, exact[ilev], 0, 0, 1, 0);
+
+        double L1norm = mf.norm1();
+        std::cout << "Level=" << ilev << " L1 norm:" << L1norm << std::endl;
+        eps.push_back(L1norm);
+    }
+    return eps;
+}
 
 BOOST_AUTO_TEST_CASE(p1_solve)
 {
@@ -204,9 +135,6 @@ BOOST_AUTO_TEST_CASE(p1_solve)
     Vector<Geometry> geom(nlevels);
     Vector<BoxArray> grids(nlevels);
     Vector<DistributionMapping> dmap(nlevels);
-
-    // geom.resize(nlevels);
-    // grids.resize(nlevels);
 
     Box domain0(IntVect { AMREX_D_DECL(0, 0, 0) },
         IntVect { AMREX_D_DECL(n_cell - 1, n_cell - 1, n_cell - 1) });
@@ -258,7 +186,6 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
-        // DistributionMapping dm { grids[ilev] };
         soln[ilev].define(grids[ilev], dmap[ilev], 1, 1);
         exact[ilev].define(grids[ilev], dmap[ilev], 1, 0);
         alpha[ilev].define(grids[ilev], dmap[ilev], 1, 0);
@@ -282,5 +209,10 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     rte.write(soln, alpha, beta, rhs, exact, unittest);
 
-    BOOST_TEST(true);
+    auto eps = check_norm(soln, exact, nlevels);
+
+    for (int ilev = 0; ilev < nlevels; ++ilev)
+    {
+        BOOST_TEST(eps[ilev] < 1e-6 * n_cell * n_cell * n_cell);
+    }
 }

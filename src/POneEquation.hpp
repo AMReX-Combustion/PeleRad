@@ -80,19 +80,31 @@ public:
         std::array<LinOpBCType, AMREX_SPACEDIM> mlmg_lobc;
         std::array<LinOpBCType, AMREX_SPACEDIM> mlmg_hibc;
 
-        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-        {
-            if (geom_[0].isPeriodic(idim))
-            {
-                mlmg_lobc[idim] = LinOpBCType::Periodic;
-                mlmg_hibc[idim] = LinOpBCType::Periodic;
-            }
-            else
-            {
-                mlmg_lobc[idim] = LinOpBCType::Dirichlet;
-                mlmg_hibc[idim] = LinOpBCType::Dirichlet;
-            }
-        }
+        mlmg_lobc[0] = LinOpBCType::Neumann;
+        mlmg_hibc[0] = LinOpBCType::Neumann;
+
+        mlmg_lobc[1] = LinOpBCType::Dirichlet;
+        mlmg_hibc[1] = LinOpBCType::Dirichlet;
+
+        mlmg_lobc[2] = LinOpBCType::Neumann;
+        mlmg_hibc[2] = LinOpBCType::Neumann;
+
+        /*        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+                {
+                    if (geom_[0].isPeriodic(idim))
+                    {
+                        mlmg_lobc[idim] = LinOpBCType::Periodic;
+                        mlmg_hibc[idim] = LinOpBCType::Periodic;
+                    }
+                    else
+                    {
+                        // mlmg_lobc[idim] = LinOpBCType::Dirichlet;
+                        // mlmg_hibc[idim] = LinOpBCType::Dirichlet;
+                        mlmg_lobc[idim] = LinOpBCType::Neumann;
+                        mlmg_hibc[idim] = LinOpBCType::Neumann;
+                    }
+                }
+        */
 
         LPInfo info;
         info.setAgglomeration(agglomeration);
@@ -212,18 +224,20 @@ public:
         {
             for (int ilev = 0; ilev < max_level; ++ilev)
             {
-                plotmf[ilev].define(grids_[ilev], dmap_[ilev], 1, 0);
+                plotmf[ilev].define(grids_[ilev], dmap_[ilev], 3, 0);
                 MultiFab::Copy(plotmf[ilev], soln[ilev], 0, 0, 1, 0);
-                // MultiFab::Copy(plotmf[ilev], exact[ilev], 0, 1, 1, 0);
-                // MultiFab::Copy(plotmf[ilev], soln[ilev], 0, 2, 1, 0);
-                // MultiFab::Copy(plotmf[ilev], alpha[ilev], 0, 3, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], alpha[ilev], 0, 1, 1, 0);
+                // MultiFab::Copy(plotmf[ilev], beta[ilev], 0, 2, 1, 0);
+                MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 1, 1, 0);
+                MultiFab::Copy(plotmf[ilev], exact[ilev], 0, 2, 1, 0);
                 /// MultiFab::Copy(plotmf[ilev], beta[ilev], 0, 4, 1, 0);
                 // MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 5, 1, 0);
             }
             WriteMultiLevelPlotfile(plot_file_name, max_level + 1,
                 amrex::GetVecOfConstPtrs(plotmf),
                 //{ "phi", "exact", "absolute error", "alpha", "beta", "rhs" },
-                { "phi" }, geom_, 0.0, Vector<int>(max_level + 1, 0),
+                { "phi", "rhs", "mms" }, geom_, 0.0,
+                Vector<int>(max_level + 1, 0),
                 Vector<IntVect>(max_level,
                     IntVect { AMREX_D_DECL(ref_ratio, ref_ratio, ref_ratio) }));
         }
