@@ -7,28 +7,11 @@
 #include <POneEquation.hpp>
 
 void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
-    Vector<MultiFab>& beta, Vector<MultiFab>& rhs, Vector<MultiFab>& exact)
+    Vector<MultiFab>& beta, Vector<MultiFab>& rhs, Vector<MultiFab>& exact,
+    double const L)
 {
-    // MLLinOp::BCType bc_type = MLLinOp::BCType::Dirichlet;
-    MLLinOp::BCType bc_type = MLLinOp::BCType::Neumann;
-
-    char bct;
-    if (bc_type == MLLinOp::BCType::Dirichlet)
-    {
-        bct = 'd';
-    }
-    else if (bc_type == MLLinOp::BCType::Neumann)
-    {
-        bct = 'n';
-    }
-    else
-    {
-        bct = 'p';
-    }
-
     const int nlevels = geom.size();
 
-    const double L        = 2.0;
     const double n        = 3.0;
     const double npioverL = n * M_PI / L;
 
@@ -54,20 +37,6 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
             auto const& exact_ = exact[ilev][mfi].array();
             auto const& rhs_   = rhs[ilev][mfi].array();
 
-            for (int k = lo.z - 1; k <= hi.z + 1; ++k)
-            {
-                // double z = problo[2] + dx[2] * ((double)k + 0.5);
-                for (int j = lo.y - 1; j <= hi.y + 1; ++j)
-                {
-                    // double y = problo[1] + dx[1] * ((double)j + 0.5);
-                    for (int i = lo.x - 1; i <= hi.x + 1; ++i)
-                    {
-                        beta_(i, j, k) = 1.0;
-                        // std::cout << beta_(i, j, k) << std::endl;
-                    }
-                }
-            }
-
             for (int k = lo.z; k <= hi.z; ++k)
             {
                 double z = problo[2] + dx[2] * ((double)k + 0.5);
@@ -77,19 +46,20 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
                     for (int i = lo.x; i <= hi.x; ++i)
                     {
                         double x = problo[0] + dx[0] * ((double)i + 0.5);
-                        double r = std::sqrt((x - xc) * (x - xc)
-                                             + (y - yc) * (y - yc)
-                                             + (z - zc) * (z - zc));
 
                         alpha_(i, j, k) = 1.0;
 
-                        double sincos
-                            = std::sin(npioverL * x) * cos(npioverL * y);
+                        beta_(i, j, k) = 1.0;
 
-                        exact_(i, j, k) = sincos;
+                        double sincossin = std::sin(npioverL * x)
+                                           * std::cos(npioverL * y)
+                                           * std::sin(npioverL * z);
 
-                        rhs_(i, j, k)
-                            = (2.0 / 3.0 * npioverL * npioverL + 1.0) * sincos;
+                        exact_(i, j, k) = sincossin;
+
+                        rhs_(i, j, k) = (beta_(i, j, k) * npioverL * npioverL
+                                            + beta_(i, j, k))
+                                        * sincossin;
                     }
                 }
             }
@@ -100,7 +70,7 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
 std::vector<double> check_norm(
     Vector<MultiFab>& phi, Vector<MultiFab>& exact, int const nlevels)
 {
-    std::vector<double> eps(nlevels);
+    std::vector<double> eps;
 
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
@@ -109,8 +79,10 @@ std::vector<double> check_norm(
 
         MultiFab::Subtract(mf, exact[ilev], 0, 0, 1, 0);
 
+        double L0norm = mf.norm0();
         double L1norm = mf.norm1();
-        std::cout << "Level=" << ilev << " L1 norm:" << L1norm << std::endl;
+        std::cout << "Level=" << ilev << ", L0 norm:" << L0norm
+                  << ", L1 norm:" << L1norm << std::endl;
         eps.push_back(L1norm);
     }
     return eps;
@@ -156,6 +128,8 @@ BOOST_AUTO_TEST_CASE(p1_solve)
         dmap[ilev].define(grids[ilev]);
     }
 
+    const double L = 2.0;
+
     amrex::RealBox rb { AMREX_D_DECL(-1.0, -1.0, -1.0),
         AMREX_D_DECL(1.0, 1.0, 1.0) };
 
@@ -195,7 +169,7 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     PeleRad::POneEquation rte(amrpp, mlmgpp, geom, grids, dmap);
 
-    init_prob(geom, alpha, beta, rhs, exact);
+    init_prob(geom, alpha, beta, rhs, exact, L);
 
     for (auto& mf : soln)
     {
@@ -211,8 +185,8 @@ BOOST_AUTO_TEST_CASE(p1_solve)
 
     auto eps = check_norm(soln, exact, nlevels);
 
-    for (int ilev = 0; ilev < nlevels; ++ilev)
+    for (auto iter : eps)
     {
-        BOOST_TEST(eps[ilev] < 1e-6 * n_cell * n_cell * n_cell);
+        BOOST_TEST(iter < 1e-2 * n_cell * n_cell * n_cell);
     }
 }

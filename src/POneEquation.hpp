@@ -89,23 +89,6 @@ public:
         mlmg_lobc[2] = LinOpBCType::Neumann;
         mlmg_hibc[2] = LinOpBCType::Neumann;
 
-        /*        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-                {
-                    if (geom_[0].isPeriodic(idim))
-                    {
-                        mlmg_lobc[idim] = LinOpBCType::Periodic;
-                        mlmg_hibc[idim] = LinOpBCType::Periodic;
-                    }
-                    else
-                    {
-                        // mlmg_lobc[idim] = LinOpBCType::Dirichlet;
-                        // mlmg_hibc[idim] = LinOpBCType::Dirichlet;
-                        mlmg_lobc[idim] = LinOpBCType::Neumann;
-                        mlmg_hibc[idim] = LinOpBCType::Neumann;
-                    }
-                }
-        */
-
         LPInfo info;
         info.setAgglomeration(agglomeration);
         info.setConsolidation(consolidation);
@@ -158,7 +141,6 @@ public:
             // if(use_hypre) mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
             mlmg.setVerbose(verbose);
             mlmg.setBottomVerbose(bottom_verbose);
-
             mlmg.solve(psoln, prhs, rel_tol, abs_tol);
         }
         else
