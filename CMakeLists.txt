@@ -8,6 +8,7 @@ add_dependencies(PeleRad record_hash)
 add_library(PeleRad::PeleRad ALIAS PeleRad)
 
 option(PELERAD_ENABLE_MPI "Enable MPI" OFF)
+
 if(PELERAD_ENABLE_MPI)
   find_package(MPI REQUIRED)
   target_link_libraries(PeleRad INTERFACE MPI::MPI_CXX)

@@ -138,7 +138,9 @@ public:
             MLMG mlmg(mlabec);
             mlmg.setMaxIter(max_iter);
             mlmg.setMaxFmgIter(max_fmg_iter);
-            // if(use_hypre) mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+
+            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+
             mlmg.setVerbose(verbose);
             mlmg.setBottomVerbose(bottom_verbose);
             mlmg.solve(psoln, prhs, rel_tol, abs_tol);

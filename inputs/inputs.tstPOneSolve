@@ -18,8 +18,9 @@ max_grid_size = 64
 plot_file_name = "plt"
 
 #mlmg
+use_hypre = 0
 verbose = 2
-bottom_verbose = 0
+bottom_verbose = 2
 fine_level_solve_only = 0
 max_iter = 150
 max_fmg_iter = 0

@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(p1_solve)
     rte.solve(soln, alpha, beta, rhs, exact);
 
     // turn off write for unit tests
-    bool unittest = false;
+    bool unittest = true;
 
     rte.write(soln, alpha, beta, rhs, exact, unittest);
 
