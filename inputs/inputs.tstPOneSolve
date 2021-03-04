@@ -1,9 +1,4 @@
 # Problem
-prob.a = 1.e-3
-prob.b = 1.0
-prob.sigma = 10.0
-prob.w = 0.05
-
 prob.bc_type = Dirichlet
 #prob.bc_type = Neumann
 #prob.bc_type = Periodic
