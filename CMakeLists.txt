@@ -17,7 +17,7 @@ endif()
 find_package(Boost 1.67.0 REQUIRED COMPONENTS filesystem system iostreams program_options unit_test_framework)
 
 option(PELERAD_ENABLE_CUDA "CUDA build" OFF)
-if(PELERAD_ENABLE_CUDA)
+if(PELERAD_GPU_BACKEND="CUDA")
   enable_language(CUDA)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --expt-extended-lambda -Wno-deprecated-gpu-targets ${NVCC_ARCH_FLAGS}")
   if(POLICY CMP0104)
