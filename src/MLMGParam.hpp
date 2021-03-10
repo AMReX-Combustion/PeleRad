@@ -26,8 +26,7 @@ public:
     int consolidation_;
     int composite_solve_;
     int fine_level_solve_only_;
-
-    amrex::Vector<amrex::Real> scalars_;
+    bool use_hypre_;
 
     MLMGParam() = default;
 
@@ -50,12 +49,7 @@ public:
         pp_.query("consolidation", consolidation_);
         pp_.query("composite_solve", composite_solve_);
         pp_.query("fine_level_solve_only", fine_level_solve_only_);
-
-        scalars_.resize(2);
-        scalars_[0] = 1.0;
-        scalars_[1] = 1.0 / 3.0;
-
-        pp.queryarr("scalars", scalars_);
+        pp_.query("use_hypre", use_hypre_);
     }
 };
 }

@@ -60,10 +60,10 @@ public:
         auto agglomeration         = mlmgpp_.agglomeration_;
         auto consolidation         = mlmgpp_.consolidation_;
         auto linop_maxorder        = mlmgpp_.linop_maxorder_;
-        auto scalars               = mlmgpp_.scalars_;
         auto rel_tol               = mlmgpp_.reltol_;
         auto abs_tol               = mlmgpp_.abstol_;
         auto ref_ratio             = amrpp_.ref_ratio_;
+        auto use_hypre             = mlmgpp_.use_hypre_;
 
         /*
         std::cout << "composite_solve=" << composite_solve
@@ -139,7 +139,7 @@ public:
             mlmg.setMaxIter(max_iter);
             mlmg.setMaxFmgIter(max_fmg_iter);
 
-            mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+            if (use_hypre) mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
 
             mlmg.setVerbose(verbose);
             mlmg.setBottomVerbose(bottom_verbose);
@@ -185,6 +185,9 @@ public:
                 MLMG mlmg(mlabec);
                 mlmg.setMaxIter(max_iter);
                 mlmg.setMaxFmgIter(max_fmg_iter);
+
+                if (use_hypre) mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
+
                 mlmg.setVerbose(verbose);
                 mlmg.setBottomVerbose(bottom_verbose);
 
