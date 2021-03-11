@@ -15,7 +15,7 @@ namespace PeleRad
 
 class POneEquation
 {
-private:
+public:
     // AMR parameters
     AMRParam amrpp_;
 
@@ -25,12 +25,6 @@ private:
     Vector<Geometry> geom_;
     Vector<BoxArray> grids_;
     Vector<DistributionMapping> dmap_;
-
-    Vector<MultiFab> phi_;
-    Vector<MultiFab> phiexact_;
-    Vector<MultiFab> rhs_;
-    Vector<MultiFab> acoef_;
-    Vector<MultiFab> bcoef_;
 
 public:
     POneEquation() = default;
