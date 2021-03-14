@@ -15,7 +15,7 @@ namespace PeleRad
 
 class POneEquation
 {
-public:
+private:
     // AMR parameters
     AMRParam amrpp_;
 
@@ -41,8 +41,7 @@ public:
 
     AMREX_GPU_HOST
     void solve(Vector<MultiFab>& soln, Vector<MultiFab> const& alpha,
-        Vector<MultiFab> const& beta, Vector<MultiFab> const& rhs,
-        Vector<MultiFab> const& exact)
+        Vector<MultiFab> const& beta, Vector<MultiFab> const& rhs)
     {
         auto verbose               = mlmgpp_.verbose_;
         auto bottom_verbose        = mlmgpp_.bottom_verbose_;
@@ -142,10 +141,6 @@ public:
         else
         {
             const int levbegin = (fine_level_solve_only) ? nlevels - 1 : 0;
-            for (int ilev = 0; ilev < levbegin; ++ilev)
-            {
-                MultiFab::Copy(soln[ilev], exact[ilev], 0, 0, 1, 0);
-            }
             for (int ilev = levbegin; ilev < nlevels; ++ilev)
             {
                 MLABecLaplacian mlabec({ geom_[ilev] },

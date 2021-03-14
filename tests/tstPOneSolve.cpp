@@ -18,16 +18,11 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
         const double* problo = geom[ilev].ProbLo();
-        const double* probhi = geom[ilev].ProbHi();
         const double* dx     = geom[ilev].CellSize();
 
         for (MFIter mfi(alpha[ilev]); mfi.isValid(); ++mfi)
         {
             const Box& bx = mfi.validbox();
-
-            double xc = (probhi[0] + problo[0]) / 2.0;
-            double yc = (probhi[1] + problo[1]) / 2.0;
-            double zc = (probhi[2] + problo[2]) / 2.0;
 
             const Dim3 lo = amrex::lbound(bx);
             const Dim3 hi = amrex::ubound(bx);
@@ -176,7 +171,7 @@ BOOST_AUTO_TEST_CASE(p1_solve)
         mf.setVal(0.0);
     }
 
-    rte.solve(soln, alpha, beta, rhs, exact);
+    rte.solve(soln, alpha, beta, rhs);
 
     // turn off write for unit tests
     bool unittest = true;

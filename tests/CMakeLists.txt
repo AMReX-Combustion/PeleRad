@@ -46,7 +46,7 @@ target_compile_definitions(PeleRad_AmrexParallelFor.exe PRIVATE BOOST_TEST_DYN_L
 add_test(NAME PeleRad_AmrexParallelFor_Test COMMAND ./PeleRad_AmrexParallelFor.exe)
 endif()
 
-if (PELERAD_GPU_BACKEND="CUDA")
+if(PELERAD_ENABLE_CUDA)
   setup_target_for_cuda_compilation(PeleRad_AmrexParallelFor.exe)
   setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
   setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
