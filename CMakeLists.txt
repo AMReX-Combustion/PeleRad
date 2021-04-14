@@ -16,12 +16,16 @@ endif()
 
 find_package(Boost 1.67.0 REQUIRED COMPONENTS filesystem system iostreams program_options unit_test_framework)
 
+include(${CMAKE_SOURCE_DIR}/cmake/SetAmrexOptions.cmake)
+
+add_subdirectory(${AMREX_HOME_DIR} amrex)
+
 if(PELERAD_ENABLE_CUDA)
-  enable_language(CUDA)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --expt-extended-lambda -Wno-deprecated-gpu-targets ${NVCC_ARCH_FLAGS}")
   if(POLICY CMP0104)
       cmake_policy(SET CMP0104 OLD)
   endif()
+  enable_language(CUDA)
   include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
 endif()
 
@@ -54,5 +58,4 @@ if(${PELERAD_ENABLE_TESTS})
   add_subdirectory(tests)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/SetAmrexOptions.cmake)
-add_subdirectory(${AMREX_HOME_DIR} amrex)
+
