@@ -16,25 +16,23 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_lo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_hi,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
-    const amrex::Dim3& dlo, const amrex::Dim3& dhi, amrex::Box const& vbx,
-    int robin_dir, int robin_face)
+    const amrex::Dim3& dlo, const amrex::Dim3& dhi, amrex::Box const& vbx)
 {
     double const L            = 2.0;
     double const n            = 3.0;
     double const npioverL     = n * M_PI / L;
     constexpr amrex::Real pi  = M_PI;
     constexpr amrex::Real tpi = 2.0 * pi;
-    constexpr amrex::Real fpi = 4.0 * pi;
 
-    amrex::Real xc = (prob_hi[0] + prob_lo[0]) * 0.5;
-    amrex::Real yc = (prob_hi[1] + prob_lo[1]) * 0.5;
-    amrex::Real zc = (prob_hi[2] + prob_lo[2]) * 0.5;
+    //    amrex::Real xc = (prob_hi[0] + prob_lo[0]) * 0.5;
+    //    amrex::Real yc = (prob_hi[1] + prob_lo[1]) * 0.5;
+    //    amrex::Real zc = (prob_hi[2] + prob_lo[2]) * 0.5;
 
     amrex::Real x = prob_lo[0] + dx[0] * (i + 0.5);
     amrex::Real y = prob_lo[1] + dx[1] * (j + 0.5);
     amrex::Real z = prob_lo[2] + dx[2] * (k + 0.5);
-    amrex::Real r = std::sqrt(
-        (x - xc) * (x - xc) + (y - yc) * (y - yc) + (z - zc) * (z - zc));
+    //    amrex::Real r = std::sqrt(
+    //        (x - xc) * (x - xc) + (y - yc) * (y - yc) + (z - zc) * (z - zc));
 
     beta(i, j, k) = 1.0;
 
@@ -48,9 +46,6 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
     double coscossin = std::cos(npioverL * x) * std::cos(npioverL * y)
                        * std::sin(npioverL * z);
 
-    r = std::sqrt(
-        (x - xc) * (x - xc) + (y - yc) * (y - yc) + (z - zc) * (z - zc));
-
     sol(i, j, k) = sincossin;
 
     if (vbx.contains(i, j, k))
@@ -62,7 +57,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
     // Robin BC
     bool robin_cell = false;
     double sign     = 1.0;
-    if (robin_dir == 0 && j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
+    if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
         if (i > dhi.x)
         {
@@ -76,44 +71,21 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
             sign       = 1.0;
         }
     }
-    else if (robin_dir == 1 && i >= dlo.x && i <= dhi.x && k >= dlo.z
-             && k <= dhi.z)
-    {
-        robin_cell = (j > dhi.y) || (j < dlo.y);
-    }
-    else if (robin_dir == 2 && i >= dlo.x && i <= dhi.x && j >= dlo.y
-             && j <= dhi.y)
-    {
-        robin_cell = (k > dhi.z) || (k < dlo.z);
-    }
+    /*    else if (robin_dir == 1 && i >= dlo.x && i <= dhi.x && k >= dlo.z
+                 && k <= dhi.z)
+        {
+            robin_cell = (j > dhi.y) || (j < dlo.y);
+        }
+        else if (robin_dir == 2 && i >= dlo.x && i <= dhi.x && j >= dlo.y
+                 && j <= dhi.y)
+        {
+            robin_cell = (k > dhi.z) || (k < dlo.z);
+        }*/
     if (robin_cell)
     {
         robin_a(i, j, k) = 1.0;
         robin_b(i, j, k) = -4.0 / 3.0;
 
-        amrex::Real dphidn;
-        if (robin_dir == 0)
-        {
-            dphidn = -tpi * std::sin(tpi * x) * std::cos(tpi * y)
-                         * std::cos(tpi * z)
-                     - pi * std::sin(fpi * x) * std::cos(fpi * y)
-                           * std::cos(fpi * z);
-        }
-        else if (robin_dir == 1)
-        {
-            dphidn = -tpi * std::cos(tpi * x) * std::sin(tpi * y)
-                         * std::cos(tpi * z)
-                     - pi * std::cos(fpi * x) * std::sin(fpi * y)
-                           * std::cos(fpi * z);
-        }
-        else
-        {
-            dphidn = -tpi * std::cos(tpi * x) * std::cos(tpi * y)
-                         * std::sin(tpi * z)
-                     - pi * std::cos(fpi * x) * std::cos(fpi * y)
-                           * std::sin(fpi * z);
-        }
-        if (robin_face == 0) dphidn *= -1.0;
         robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                            + robin_b(i, j, k) * npioverL * sign * coscossin;
     }
@@ -124,16 +96,11 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
     amrex::MultiFab& acoef, amrex::MultiFab& bcoef, amrex::MultiFab& robin_a,
     amrex::MultiFab& robin_b, amrex::MultiFab& robin_f)
 {
-    int robin_dir  = 0;
-    int robin_face = 0;
-
     const auto prob_lo = geom.ProbLoArray();
     const auto prob_hi = geom.ProbHiArray();
     const auto dx      = geom.CellSizeArray();
     const auto dlo     = amrex::lbound(geom.Domain());
     const auto dhi     = amrex::ubound(geom.Domain());
-    const auto rdir    = robin_dir;
-    const auto rface   = robin_face;
     for (amrex::MFIter mfi(rhs); mfi.isValid(); ++mfi)
     {
         amrex::Box const& bx  = mfi.validbox();
@@ -145,11 +112,11 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rafab     = robin_a.array(mfi);
         auto const& rbfab     = robin_b.array(mfi);
         auto const& rffab     = robin_f.array(mfi);
-        amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE(
-                                    int i, int j, int k) noexcept {
-            actual_init_abeclap(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
-                rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx, rdir, rface);
-        });
+        amrex::ParallelFor(
+            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                actual_init_abeclap(i, j, k, rhsfab, solfab, acfab, bcfab,
+                    rafab, rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
+            });
     }
 
     amrex::MultiFab::Copy(exact_solution, solution, 0, 0, 1, 0);

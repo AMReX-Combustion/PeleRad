@@ -72,6 +72,7 @@ public:
         auto const bottom_verbose       = mlmgpp_.bottom_verbose_;
         auto const tol_rel              = mlmgpp_.reltol_;
         auto const tol_abs              = mlmgpp_.abstol_;
+        auto const use_hypre            = mlmgpp_.use_hypre_;
 
         auto const& geom  = geom_;
         auto const& grids = grids_;
@@ -112,6 +113,8 @@ public:
         mlmg.setMaxFmgIter(max_fmg_iter);
         mlmg.setVerbose(verbose);
         mlmg.setBottomVerbose(bottom_verbose);
+
+        if (use_hypre) mlmg.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
 
         mlmg.solve({ &solution }, { &rhs }, tol_rel, tol_abs);
     }

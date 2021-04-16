@@ -5,7 +5,7 @@ max_grid_size = 64
 plot_file_name = "pltRobin"
 
 #mlmg
-#use_hypre = 0
+use_hypre = 0
 verbose = 2
 bottom_verbose = 1
 max_iter = 100
