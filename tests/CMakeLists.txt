@@ -18,6 +18,12 @@ target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_te
 target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
+add_executable(PeleRad_ArtificialFlame.exe tstArtificialFlame.cpp ut_main.cpp)
+target_include_directories(PeleRad_ArtificialFlame.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base)
+target_link_libraries(PeleRad_ArtificialFlame.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_compile_definitions(PeleRad_ArtificialFlame.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
+add_test(NAME PeleRad_ArtificialFlame_Test COMMAND ./PeleRad_ArtificialFlame.exe)
+
 if(PELERAD_ENABLE_EB)
 add_executable(PeleRad_POneSolveEB.exe tstPOneSolveEB.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSolveEB.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG  ${AMREX_HOME_DIR}/Src/EB)
