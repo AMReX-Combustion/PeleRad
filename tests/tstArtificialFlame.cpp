@@ -32,10 +32,10 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     amrex::Real r = std::sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
 
-    amrex::Real expr  = std::exp(-(0.15 * r / (0.05 + 0.1 * 0.5 * z))
-                                * (0.15 * r / (0.05 + 0.1 * 0.5 * z)));
-    amrex::Real expTz = std::exp(-((0.275 * z - 1.3) / (0.7 + 0.5 * 0.5 * z))
-                                 * ((0.275 * z - 1.3) / (0.7 + 0.5 * 0.5 * z)));
+    amrex::Real expr  = std::exp(-(2.0 * r / (0.05 + 0.1 * 0.5 * z))
+                                * (2.0 * r / (0.05 + 0.1 * 0.5 * z)));
+    amrex::Real expTz = std::exp(-((0.2 * z - 1.3) / (0.7 + 0.5 * z))
+                                 * ((0.2 * z - 1.3) / (0.7 + 0.5 * z)));
 
     temp(i, j, k) = 300.0 + 1800.0 * expr * expTz;
 
@@ -66,7 +66,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 {
-    bool constexpr WRITE = true;
+    bool constexpr WRITE = false;
 
     std::string data_path;
 
@@ -95,15 +95,17 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 
     std::cout << "initialize grid and variables ... \n";
 
-    amrex::RealBox rb({ D_DECL(0.0, 0.0, 0.0) }, { D_DECL(0.125, 0.125, 0.8) });
+    amrex::RealBox rb(
+        { AMREX_D_DECL(0.0, 0.0, 0.0) }, { AMREX_D_DECL(0.125, 0.125, 0.8) });
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 
-    std::vector<int> npts { 128, 128, 128 };
+    std::vector<int> npts { 64, 64, 128 };
     amrex::Box domain0(amrex::IntVect(AMREX_D_DECL(0, 0, 0)),
         amrex::IntVect { AMREX_D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1) });
-    grids.define(domain0);
+    geom.define(domain0);
 
+    grids.define(domain0);
     int const max_grid_size = 32;
     grids.maxSize(max_grid_size);
 
@@ -119,13 +121,11 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
     absc.define(grids, dmap, 1, 0);
 
     std::cout << "obtain the properties ... \n";
-    int num_grow              = 0;
-    int const num_rad_species = 1;
 
-    const auto& kpco2  = radprop.kpco2();
-    const auto& kph2o  = radprop.kph2o();
-    const auto& kpco   = radprop.kpco();
-    const auto& kpsoot = radprop.kpsoot();
+    auto const& kpco2  = radprop.kpco2();
+    auto const& kph2o  = radprop.kph2o();
+    auto const& kpco   = radprop.kpco();
+    auto const& kpsoot = radprop.kpsoot();
 
     auto const plo = geom.ProbLoArray();
     auto const phi = geom.ProbHiArray();
@@ -147,12 +147,9 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
         amrex::ParallelFor(
             bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 initGasField(i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx, plo, phi);
+                getRadProp(i, j, k, Yco2, Yh2o, Yco, fv, T, P, kappa, kpco2,
+                    kph2o, kpco, kpsoot);
             });
-
-        ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-            getRadProp(i, j, k, Yco2, Yh2o, Yco, fv, T, P, kappa, kpco2, kph2o,
-                kpco, kpsoot);
-        });
     }
 
     if (WRITE)

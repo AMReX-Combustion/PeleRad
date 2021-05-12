@@ -31,7 +31,8 @@ namespace RadProp
         amrex::Real TindexInte = floor((T - 300.0) / 20.0);
         TindexL                = static_cast<int>(TindexInte);
         weight                 = TindexReal - TindexInte;
-        assert(weight <= 1 && weight > 0);
+
+        assert(weight <= 1 && weight >= 0);
     }
 
     AMREX_GPU_HOST_DEVICE
@@ -65,6 +66,7 @@ namespace RadProp
 
         absc(i, j, k) = yco2(i, j, k) * kp_co2 + yh2o(i, j, k) * kp_h2o
                         + yco(i, j, k) * kp_co;
+
         absc(i, j, k) *= pressure(i, j, k) * 100.0;
     }
 

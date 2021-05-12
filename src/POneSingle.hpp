@@ -24,13 +24,14 @@ public:
     amrex::BoxArray const& grids_;
     amrex::DistributionMapping const& dmap_;
 
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc_;
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc_;
-
     amrex::MultiFab& solution_;
     amrex::MultiFab const& rhs_;
     amrex::MultiFab const& acoef_;
     amrex::MultiFab const& bcoef_;
+
+    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc_;
+    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc_;
+
     amrex::MultiFab const& robin_a_;
     amrex::MultiFab const& robin_b_;
     amrex::MultiFab const& robin_f_;

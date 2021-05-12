@@ -18,11 +18,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
     const amrex::Dim3& dlo, const amrex::Dim3& dhi, amrex::Box const& vbx)
 {
-    double const L            = 2.0;
-    double const n            = 3.0;
-    double const npioverL     = n * M_PI / L;
-    constexpr amrex::Real pi  = M_PI;
-    constexpr amrex::Real tpi = 2.0 * pi;
+    double const L        = 2.0;
+    double const n        = 3.0;
+    double const npioverL = n * M_PI / L;
 
     //    amrex::Real xc = (prob_hi[0] + prob_lo[0]) * 0.5;
     //    amrex::Real yc = (prob_hi[1] + prob_lo[1]) * 0.5;
