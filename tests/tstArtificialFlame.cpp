@@ -32,41 +32,39 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     amrex::Real r = std::sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
 
-    amrex::Real expr  = std::exp(-(2.0 * r / (0.05 + 0.1 * 0.5 * z))
-                                * (2.0 * r / (0.05 + 0.1 * 0.5 * z)));
-    amrex::Real expTz = std::exp(-((0.2 * z - 1.3) / (0.7 + 0.5 * z))
-                                 * ((0.2 * z - 1.3) / (0.7 + 0.5 * z)));
+    amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
+                                * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
+    amrex::Real expTz = std::exp(-((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z))
+                                 * ((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z)));
 
-    temp(i, j, k) = 300.0 + 1800.0 * expr * expTz;
+    temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
     pressure(i, j, k) = 1.0;
 
     amrex::Real expSoot
-        = std::exp(-((0.0275 * z - 1.0) / 0.7) * ((0.0275 * z - 1.0) / 0.7));
+        = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
 
     fv_soot(i, j, k) = 1e-6 * expr * expSoot;
 
-    amrex::Real expCO2z
-        = std::exp(-((0.275 * z - 1.1) / (0.6 + 0.5 * 0.5 * z))
-                   * ((0.275 * z - 1.1) / (0.6 + 0.5 * 0.5 * z)));
+    amrex::Real expCO2z = std::exp(-((4.0 * z - 1.1) / (0.6 + 0.5 * 4.0 * z))
+                                   * ((4.0 * z - 1.1) / (0.6 + 0.5 * 4.0 * z)));
 
-    y_co2(i, j, k) = 0.09 * expr * expCO2z;
+    y_co2(i, j, k) = 0.1 * expr * expCO2z;
 
-    amrex::Real expH2Oz
-        = std::exp(-((0.275 * z - 1.0) / (0.7 + 0.5 * 0.5 * z))
-                   * ((0.275 * z - 1.0) / (0.7 + 0.5 * 0.5 * z)));
+    amrex::Real expH2Oz = std::exp(-((4.0 * z - 1.0) / (0.7 + 0.5 * 4.0 * z))
+                                   * ((4.0 * z - 1.0) / (0.7 + 0.5 * 4.0 * z)));
 
     y_h2o(i, j, k) = 0.2 * expr * expH2Oz;
 
     amrex::Real expCOz
-        = std::exp(-((0.025 * z - 1.0) / 0.7) * ((0.025 * z - 1.0) / 0.7));
+        = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
 
-    y_co(i, j, k) = 0.07 * expr * expCOz;
+    y_co(i, j, k) = 0.09 * expr * expCOz;
 }
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 {
-    bool constexpr WRITE = false;
+    bool constexpr WRITE = true;
 
     std::string data_path;
 

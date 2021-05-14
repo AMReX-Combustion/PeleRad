@@ -12,7 +12,7 @@ namespace RadProp
 {
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    void interpT(const amrex::Real& T, int& TindexL, amrex::Real& weight)
+    void interpT(amrex::Real const& T, int& TindexL, amrex::Real& weight)
     {
         if (T < 300)
         {
@@ -37,8 +37,8 @@ namespace RadProp
 
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    amrex::Real interpk(const int& TindexL, const amrex::Real& weight,
-        const amrex::GpuArray<amrex::Real, 126ul>& k)
+    amrex::Real interpk(int const& TindexL, amrex::Real const& weight,
+        amrex::GpuArray<amrex::Real, 126ul> const& k)
     {
         return (1.0 - weight) * k[TindexL] + weight * k[TindexL + 1];
     }
