@@ -5,8 +5,8 @@
 #include <AMReX_PlotFileUtil.H>
 #include <POneSingle.hpp>
 
-AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
-    int k, amrex::Array4<amrex::Real> const& rhs,
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
+    amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& sol,
     amrex::Array4<amrex::Real> const& alpha,
     amrex::Array4<amrex::Real> const& beta,
@@ -16,21 +16,15 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_lo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_hi,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
-    const amrex::Dim3& dlo, const amrex::Dim3& dhi, amrex::Box const& vbx)
+    amrex::Dim3 const& dlo, amrex::Dim3 const& dhi, amrex::Box const& vbx)
 {
     double const L        = 2.0;
     double const n        = 3.0;
     double const npioverL = n * M_PI / L;
 
-    //    amrex::Real xc = (prob_hi[0] + prob_lo[0]) * 0.5;
-    //    amrex::Real yc = (prob_hi[1] + prob_lo[1]) * 0.5;
-    //    amrex::Real zc = (prob_hi[2] + prob_lo[2]) * 0.5;
-
     amrex::Real x = prob_lo[0] + dx[0] * (i + 0.5);
     amrex::Real y = prob_lo[1] + dx[1] * (j + 0.5);
     amrex::Real z = prob_lo[2] + dx[2] * (k + 0.5);
-    //    amrex::Real r = std::sqrt(
-    //        (x - xc) * (x - xc) + (y - yc) * (y - yc) + (z - zc) * (z - zc));
 
     beta(i, j, k) = 1.0;
 
@@ -68,24 +62,66 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_abeclap(int i, int j,
             robin_cell = true;
             sign       = 1.0;
         }
-    }
-    /*    else if (robin_dir == 1 && i >= dlo.x && i <= dhi.x && k >= dlo.z
-                 && k <= dhi.z)
-        {
-            robin_cell = (j > dhi.y) || (j < dlo.y);
-        }
-        else if (robin_dir == 2 && i >= dlo.x && i <= dhi.x && j >= dlo.y
-                 && j <= dhi.y)
-        {
-            robin_cell = (k > dhi.z) || (k < dlo.z);
-        }*/
-    if (robin_cell)
-    {
-        robin_a(i, j, k) = 1.0;
-        robin_b(i, j, k) = -4.0 / 3.0;
 
-        robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
-                           + robin_b(i, j, k) * npioverL * sign * coscossin;
+        if (robin_cell)
+        {
+            robin_a(i, j, k) = 1.0;
+            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+
+            robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
+                               + robin_b(i, j, k) * npioverL * coscossin;
+        }
+    }
+    else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
+    {
+        if (j > dhi.y)
+        {
+            robin_cell = true;
+            sign       = -1.0;
+        }
+
+        if (j < dlo.y)
+        {
+            robin_cell = true;
+            sign       = 1.0;
+        }
+
+        if (robin_cell)
+        {
+            robin_a(i, j, k) = 1.0;
+            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+
+            double msinsinsin = -std::sin(npioverL * x) * std::sin(npioverL * y)
+                                * std::sin(npioverL * z);
+
+            robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
+                               + robin_b(i, j, k) * npioverL * msinsinsin;
+        }
+    }
+
+    else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
+    {
+        if (k > dhi.z)
+        {
+            robin_cell = true;
+            sign       = -1.0;
+        }
+        if (k < dlo.z)
+        {
+            robin_cell = true;
+            sign       = 1.0;
+        }
+        if (robin_cell)
+        {
+            robin_a(i, j, k) = 1.0;
+            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+
+            double sincoscos = -std::sin(npioverL * x) * std::cos(npioverL * y)
+                               * std::cos(npioverL * z);
+
+            robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
+                               + robin_b(i, j, k) * npioverL * sincoscos;
+        }
     }
 }
 
@@ -94,11 +130,11 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
     amrex::MultiFab& acoef, amrex::MultiFab& bcoef, amrex::MultiFab& robin_a,
     amrex::MultiFab& robin_b, amrex::MultiFab& robin_f)
 {
-    const auto prob_lo = geom.ProbLoArray();
-    const auto prob_hi = geom.ProbHiArray();
-    const auto dx      = geom.CellSizeArray();
-    const auto dlo     = amrex::lbound(geom.Domain());
-    const auto dhi     = amrex::ubound(geom.Domain());
+    auto const prob_lo = geom.ProbLoArray();
+    auto const prob_hi = geom.ProbHiArray();
+    auto const dx      = geom.CellSizeArray();
+    auto const dlo     = amrex::lbound(geom.Domain());
+    auto const dhi     = amrex::ubound(geom.Domain());
     for (amrex::MFIter mfi(rhs); mfi.isValid(); ++mfi)
     {
         amrex::Box const& bx  = mfi.validbox();
@@ -112,8 +148,8 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rffab     = robin_f.array(mfi);
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                actual_init_abeclap(i, j, k, rhsfab, solfab, acfab, bcfab,
-                    rafab, rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
+                actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
+                    rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
             });
     }
 
@@ -178,6 +214,7 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
+    bool const write = false;
     int const n_cell = amrpp.n_cell_;
 
     amrex::Geometry geom;
@@ -199,13 +236,13 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         acoef, bcoef, robin_a, robin_b, robin_f);
     std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
-        amrex::LinOpBCType::Neumann) };
+        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
+        amrex::LinOpBCType::Robin) };
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
-        amrex::LinOpBCType::Neumann) };
-    PeleRad::POneSingle rte(amrpp, mlmgpp, geom, grids, dmap, solution, rhs,
-        acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
+        amrex::LinOpBCType::Robin) };
+    PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
     std::cout << "solve the PDE ... \n";
     rte.solve();
 
@@ -214,16 +251,20 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     std::cout << "normalized L1 norm:" << eps << std::endl;
 
     // plot results
-    amrex::MultiFab plotmf(grids, dmap, 4, 0);
-    amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
-    amrex::MultiFab::Copy(plotmf, rhs, 0, 1, 1, 0);
-    amrex::MultiFab::Copy(plotmf, exact_solution, 0, 2, 1, 0);
-    amrex::MultiFab::Copy(plotmf, solution, 0, 3, 1, 0);
-    amrex::MultiFab::Subtract(plotmf, plotmf, 2, 3, 1, 0);
+    if (write)
+    {
+        std::cout << "write the results ... \n";
+        amrex::MultiFab plotmf(grids, dmap, 4, 0);
+        amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
+        amrex::MultiFab::Copy(plotmf, rhs, 0, 1, 1, 0);
+        amrex::MultiFab::Copy(plotmf, exact_solution, 0, 2, 1, 0);
+        amrex::MultiFab::Copy(plotmf, solution, 0, 3, 1, 0);
+        amrex::MultiFab::Subtract(plotmf, plotmf, 2, 3, 1, 0);
 
-    auto const plot_file_name = amrpp.plot_file_name_;
-    amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
-        { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+        auto const plot_file_name = amrpp.plot_file_name_;
+        amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
+            { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+    }
 
-    BOOST_TEST(eps < 1e-3);
+    BOOST_TEST(eps < 1e-1);
 }

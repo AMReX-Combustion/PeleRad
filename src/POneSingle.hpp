@@ -1,7 +1,3 @@
-#include <boost/test/unit_test.hpp>
-
-#define BOOST_TEST_MODULE ponerobin
-
 #include <AMRParam.hpp>
 #include <AMReX_FArrayBox.H>
 #include <AMReX_MLABecLaplacian.H>
@@ -15,8 +11,6 @@ namespace PeleRad
 class POneSingle
 {
 private:
-    AMRParam amrpp_;
-
     MLMGParam mlmgpp_;
 
 public:
@@ -40,7 +34,7 @@ public:
     amrex::Real const bscalar = 1.0 / 3.0;
 
     // constructor
-    POneSingle(AMRParam const& amrpp, MLMGParam const& mlmgpp,
+    POneSingle(MLMGParam const& mlmgpp,
         amrex::Geometry const& geom, amrex::BoxArray const& grids,
         amrex::DistributionMapping const& dmap, amrex::MultiFab& solution,
         amrex::MultiFab const& rhs, amrex::MultiFab const& acoef,
@@ -49,8 +43,7 @@ public:
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc,
         amrex::MultiFab const& robin_a, amrex::MultiFab const& robin_b,
         amrex::MultiFab const& robin_f)
-        : amrpp_(amrpp),
-          mlmgpp_(mlmgpp),
+        : mlmgpp_(mlmgpp),
           geom_(geom),
           grids_(grids),
           dmap_(dmap),
