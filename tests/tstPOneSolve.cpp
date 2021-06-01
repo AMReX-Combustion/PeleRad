@@ -1,12 +1,12 @@
 #include <boost/test/unit_test.hpp>
 
-#define BOOST_TEST_MODULE ponesolveeb
+#define BOOST_TEST_MODULE ponesolve
 
 #include <AMRParam.hpp>
 #include <MLMGParam.hpp>
 #include <POneEquation.hpp>
 
-void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
+void init_prob(Vector<Geometry> const& geom, Vector<MultiFab>& alpha,
     Vector<MultiFab>& beta, Vector<MultiFab>& rhs, Vector<MultiFab>& exact,
     double const L)
 {
@@ -18,6 +18,7 @@ void init_prob(const Vector<Geometry>& geom, Vector<MultiFab>& alpha,
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
         const double* problo = geom[ilev].ProbLo();
+        const double* probhi = geom[ilev].ProbHi();
         const double* dx     = geom[ilev].CellSize();
 
         for (MFIter mfi(alpha[ilev]); mfi.isValid(); ++mfi)

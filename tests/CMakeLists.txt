@@ -56,6 +56,7 @@ if(PELERAD_ENABLE_CUDA)
   setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
   setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
   setup_target_for_cuda_compilation(PeleRad_POneSingle.exe)
+  setup_target_for_cuda_compilation(PeleRad_POneSingleAF.exe)
 endif ()
 
 

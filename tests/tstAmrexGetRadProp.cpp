@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 #endif
 
     using PeleRad::PlanckMean;
-    using PeleRad::RadProp::getRadProp;
+    using PeleRad::RadProp::getRadPropGas;
 
     Vector<int> is_periodic(AMREX_SPACEDIM, 1);
 
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 
         ParallelFor(gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
             initGasField(i, j, k, Yco2, Yh2o, Yco, T, P, dx, plo, phi);
-            getRadProp(
+            getRadPropGas(
                 i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
         });
     }

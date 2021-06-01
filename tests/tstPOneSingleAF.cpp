@@ -56,8 +56,8 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     y_co(i, j, k) = 0.09 * expr * expCOz;
 }
 
-AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j,
-    int k, amrex::Array4<amrex::Real> const& rhs,
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
+    amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& alpha,
     amrex::Array4<amrex::Real> const& beta,
     amrex::Array4<amrex::Real> const& robin_a,
@@ -77,12 +77,12 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j,
     y = amrex::min(amrex::max(y, prob_lo[1]), prob_hi[1]);
     z = amrex::min(amrex::max(z, prob_lo[2]), prob_hi[2]);
 
-    beta(i,j,k) = 1.0;
+    beta(i, j, k) = 1.0;
 
     if (vbx.contains(i, j, k))
     {
-        double ka      = std::max(1.0, absc(i, j, k));
-        beta(i, j, k) = 1.0/ka;
+        double ka     = std::max(1.0, absc(i, j, k));
+        beta(i, j, k) = 1.0 / ka;
 
         rhs(i, j, k)   = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0);
         alpha(i, j, k) = ka;
@@ -151,7 +151,8 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
 #endif
 
     using PeleRad::PlanckMean;
-    using PeleRad::RadProp::getRadProp;
+    using PeleRad::RadProp::getRadPropGas;
+    using PeleRad::RadProp::getRadPropSoot;
 
     PlanckMean radprop(data_path);
     auto const& kpco2  = radprop.kpco2();
@@ -181,8 +182,9 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
             bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 initGasField(
                     i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx, prob_lo, prob_hi);
-                getRadProp(i, j, k, Yco2, Yh2o, Yco, fv, T, P, kappa, kpco2,
-                    kph2o, kpco, kpsoot);
+                getRadPropGas(
+                    i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+                getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
             });
 
         auto const& rhsfab = rhs.array(mfi);
