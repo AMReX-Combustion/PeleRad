@@ -184,6 +184,11 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
                     i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx, prob_lo, prob_hi);
                 getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+            });
+
+        // if soot exists
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
             });
 
