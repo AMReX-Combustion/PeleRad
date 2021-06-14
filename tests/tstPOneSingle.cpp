@@ -236,11 +236,11 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         acoef, bcoef, robin_a, robin_b, robin_f);
     std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Robin) };
+        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
+        amrex::LinOpBCType::Neumann) };
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Robin) };
+        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
+        amrex::LinOpBCType::Neumann) };
     PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
     std::cout << "solve the PDE ... \n";
@@ -248,7 +248,8 @@ BOOST_AUTO_TEST_CASE(p1_robin)
 
     auto eps = check_norm(solution, exact_solution);
     eps /= static_cast<double>(n_cell * n_cell * n_cell);
-    std::cout << "normalized L1 norm:" << eps << std::endl;
+    std::cout << "n_cell=" << n_cell << ", normalized L1 norm:" << eps
+              << std::endl;
 
     // plot results
     if (write)
