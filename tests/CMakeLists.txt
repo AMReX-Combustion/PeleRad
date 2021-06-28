@@ -30,6 +30,13 @@ target_include_directories(PeleRad_POneSingle.exe PUBLIC ${AMREX_HOME_DIR}/Src/B
 target_link_libraries(PeleRad_POneSingle.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingle.exe PRIVATE BOOST_TEST_DYN_LINK)
 add_test(NAME PeleRad_POneSingle_Test COMMAND ./PeleRad_POneSingle.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingle" )
+
+add_executable(PeleRad_POneMulti.exe tstPOneMulti.cpp ut_main.cpp)
+target_include_directories(PeleRad_POneMulti.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
+target_link_libraries(PeleRad_POneMulti.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
+target_compile_definitions(PeleRad_POneMulti.exe PRIVATE BOOST_TEST_DYN_LINK)
+add_test(NAME PeleRad_POneMulti_Test COMMAND ./PeleRad_POneMulti.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMulti" )
+
 add_executable(PeleRad_POneSingleAF.exe tstPOneSingleAF.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingleAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
 target_link_libraries(PeleRad_POneSingleAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
@@ -52,11 +59,10 @@ add_test(NAME PeleRad_AmrexParallelFor_Test COMMAND ./PeleRad_AmrexParallelFor.e
 endif()
 
 if(PELERAD_ENABLE_CUDA)
-  setup_target_for_cuda_compilation(PeleRad_AmrexParallelFor.exe)
-  setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
-  setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
-  setup_target_for_cuda_compilation(PeleRad_POneSingle.exe)
-  setup_target_for_cuda_compilation(PeleRad_POneSingleAF.exe)
-endif ()
-
-
+setup_target_for_cuda_compilation(PeleRad_AmrexParallelFor.exe)
+setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
+setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
+setup_target_for_cuda_compilation(PeleRad_POneSingle.exe)
+setup_target_for_cuda_compilation(PeleRad_POneMulti.exe)
+setup_target_for_cuda_compilation(PeleRad_POneSingleAF.exe)
+endif()

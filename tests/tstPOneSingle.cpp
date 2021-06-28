@@ -1,6 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#define BOOST_TEST_MODULE ponerobin
+#define BOOST_TEST_MODULE ponerobinsingle
 
 #include <AMReX_PlotFileUtil.H>
 #include <POneSingle.hpp>

@@ -225,7 +225,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp, amrex::Geometry& geom,
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 
-    std::vector<int> npts { 64, 64, 384 };
+    std::vector<int> npts { 32, 32, 192 };
     amrex::Box domain0(amrex::IntVect { AMREX_D_DECL(0, 0, 0) },
         amrex::IntVect { AMREX_D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1) });
     geom.define(domain0);
