@@ -44,25 +44,32 @@ public:
         bio_mappedsrc dataco(kplco);
         bio_mappedsrc datasoot(kplsoot);
 
-        size_t i = 0;
+        size_t i_co2 = 0;
         for (float T_temp, kp_temp; dataco2 >> T_temp >> kp_temp;)
         {
-            kpco2_[i] = kp_temp;
+            kpco2_[i_co2] = kp_temp;
+            i_co2++;
         }
 
+        size_t i_h2o = 0;
         for (float T_temp, kp_temp; datah2o >> T_temp >> kp_temp;)
         {
-            kph2o_[i] = kp_temp;
+            kph2o_[i_h2o] = kp_temp;
+            i_h2o++;
         }
 
+        size_t i_co = 0;
         for (float T_temp, kp_temp; dataco >> T_temp >> kp_temp;)
         {
-            kpco_[i] = kp_temp;
+            kpco_[i_co] = kp_temp;
+            i_co++;
         }
 
+        size_t i_soot = 0;
         for (float T_temp, kp_temp; datasoot >> T_temp >> kp_temp;)
         {
-            kpsoot_[i] = kp_temp;
+            kpsoot_[i_soot] = kp_temp;
+            i_soot++;
         }
     }
 
