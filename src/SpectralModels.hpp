@@ -12,7 +12,7 @@ namespace RadProp
 {
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    void interpT(const amrex::Real& T, int& TindexL, amrex::Real& weight)
+    void interpT(amrex::Real const& T, int& TindexL, amrex::Real& weight)
     {
         if (T < 300)
         {
@@ -31,42 +31,63 @@ namespace RadProp
         amrex::Real TindexInte = floor((T - 300.0) / 20.0);
         TindexL                = static_cast<int>(TindexInte);
         weight                 = TindexReal - TindexInte;
-        assert(weight <= 1 && weight > 0);
+
+        assert(weight <= 1 && weight >= 0);
     }
 
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    amrex::Real interpk(const int& TindexL, const amrex::Real& weight,
-        const amrex::GpuArray<amrex::Real, 126ul>& k)
+    amrex::Real interpk(int const& TindexL, amrex::Real const& weight,
+        amrex::GpuArray<amrex::Real, 126ul> const& k)
     {
         return (1.0 - weight) * k[TindexL] + weight * k[TindexL + 1];
     }
 
     AMREX_GPU_HOST_DEVICE
     AMREX_FORCE_INLINE
-    void getRadProp(int i, int j, int k,
-        const amrex::Array4<const amrex::Real>& mf,
-        const amrex::Array4<const amrex::Real>& temp,
-        const amrex::Array4<const amrex::Real>& pressure,
-        const amrex::Array4<amrex::Real>& absc,
-        const amrex::GpuArray<amrex::Real, 126ul>& kdataco2,
-        const amrex::GpuArray<amrex::Real, 126ul>& kdatah2o,
-        const amrex::GpuArray<amrex::Real, 126ul>& kdataco)
+    void getRadPropGas(int i, int j, int k,
+        amrex::Array4<const amrex::Real> const& yco2,
+        amrex::Array4<const amrex::Real> const& yh2o,
+        amrex::Array4<const amrex::Real> const& yco,
+        amrex::Array4<const amrex::Real> const& temp,
+        amrex::Array4<const amrex::Real> const& pressure,
+        amrex::Array4<amrex::Real> const& absc,
+        amrex::GpuArray<amrex::Real, 126ul> const& kdataco2,
+        amrex::GpuArray<amrex::Real, 126ul> const& kdatah2o,
+        amrex::GpuArray<amrex::Real, 126ul> const& kdataco)
     {
         int TindexL        = 0;
         amrex::Real weight = 1.0;
-        // std::cout << "input=" << temp(i, j, k) << std::endl;
         interpT(temp(i, j, k), TindexL, weight);
-        // std::cout << "output=" << TindexL << "," << weight << std::endl;
 
         amrex::Real kp_co2 = interpk(TindexL, weight, kdataco2);
         amrex::Real kp_h2o = interpk(TindexL, weight, kdatah2o);
         amrex::Real kp_co  = interpk(TindexL, weight, kdataco);
 
-        absc(i, j, k) = mf(i, j, k, 0) * kp_co2 + mf(i, j, k, 1) * kp_h2o
-                        + mf(i, j, k, 2) * kp_co;
-        absc(i, j, k) *= pressure(i, j, k);
+        absc(i, j, k) = yco2(i, j, k) * kp_co2 + yh2o(i, j, k) * kp_h2o
+                        + yco(i, j, k) * kp_co;
+
+        absc(i, j, k) *= pressure(i, j, k) * 100.0;
     }
+
+    AMREX_GPU_HOST_DEVICE
+    AMREX_FORCE_INLINE
+    void getRadPropSoot(int i, int j, int k,
+        amrex::Array4<const amrex::Real> const& fv,
+        amrex::Array4<const amrex::Real> const& temp,
+        amrex::Array4<amrex::Real> const& absc,
+        amrex::GpuArray<amrex::Real, 126ul> const& kdatasoot)
+    {
+        int TindexL        = 0;
+        amrex::Real weight = 1.0;
+
+        interpT(temp(i, j, k), TindexL, weight);
+
+        amrex::Real kp_soot = interpk(TindexL, weight, kdatasoot);
+
+        absc(i, j, k) += fv(i, j, k) * kp_soot * 100.0;
+    }
+
 }
 
 }

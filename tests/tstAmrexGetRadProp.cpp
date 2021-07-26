@@ -15,10 +15,10 @@
 using namespace amrex;
 
 AMREX_GPU_HOST_DEVICE
-inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
-    const Array4<Real>& temp, const Array4<Real>& pressure,
-    const GpuArray<Real, 3ul>& dx, const GpuArray<Real, 3ul>& plo,
-    const GpuArray<Real, 3ul>& phi) noexcept
+inline void initGasField(int i, int j, int k, Array4<Real> const& yco2,
+    Array4<Real> const& yh2o, Array4<Real> const& yco, const Array4<Real>& temp,
+    const Array4<Real>& pressure, const GpuArray<Real, 3ul>& dx,
+    const GpuArray<Real, 3ul>& plo, const GpuArray<Real, 3ul>& phi) noexcept
 {
     constexpr int num_rad_species = 3;
     constexpr Real dTemp          = 1200;
@@ -47,10 +47,9 @@ inline void initGasField(int i, int j, int k, const Array4<Real>& mf,
     temp(i, j, k)     = 1500 + dTemp * std::sin(2.0 * pi * y / PP[1]);
     pressure(i, j, k) = 50.0 + dPres * std::cos(2.0 * pi * y / PP[1]);
 
-    for (int n = 0; n < num_rad_species; n++)
-    {
-        mf(i, j, k, n) = Y_lo[n] + (Y_hi[n] - Y_lo[n]) * x / LL[n];
-    }
+    yco2(i, j, k) = Y_lo[0] + (Y_hi[0] - Y_lo[0]) * x / LL[0];
+    yh2o(i, j, k) = Y_lo[1] + (Y_hi[1] - Y_lo[1]) * x / LL[1];
+    yco(i, j, k)  = Y_lo[2] + (Y_hi[2] - Y_lo[2]) * x / LL[2];
 }
 
 BOOST_AUTO_TEST_CASE(amrex_get_radprop)
@@ -66,7 +65,7 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 #endif
 
     using PeleRad::PlanckMean;
-    using PeleRad::RadProp::getRadProp;
+    using PeleRad::RadProp::getRadPropGas;
 
     Vector<int> is_periodic(AMREX_SPACEDIM, 1);
 
@@ -102,10 +101,11 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 
     DistributionMapping dm { ba };
 
-    int num_grow                  = 0;
-    constexpr int num_rad_species = 3;
+    int num_grow = 0;
 
-    MultiFab mass_frac_rad(ba, dm, num_rad_species, num_grow);
+    MultiFab y_co2(ba, dm, 1, num_grow);
+    MultiFab y_h2o(ba, dm, 1, num_grow);
+    MultiFab y_co(ba, dm, 1, num_grow);
     MultiFab temperature(ba, dm, 1, num_grow);
     MultiFab pressure(ba, dm, 1, num_grow);
 
@@ -115,19 +115,21 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
 
     MultiFab absc(ba, dm, 1, num_grow);
 
-    for (MFIter mfi(mass_frac_rad, amrex::TilingIfNotGPU()); mfi.isValid();
-         ++mfi)
+    for (MFIter mfi(temperature, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
         const Box& gbox = mfi.tilebox();
 
-        const Array4<Real>& Yrad  = mass_frac_rad.array(mfi);
+        const Array4<Real>& Yco2  = y_co2.array(mfi);
+        const Array4<Real>& Yh2o  = y_h2o.array(mfi);
+        const Array4<Real>& Yco   = y_co.array(mfi);
         const Array4<Real>& T     = temperature.array(mfi);
         const Array4<Real>& P     = pressure.array(mfi);
         const Array4<Real>& kappa = absc.array(mfi);
 
         ParallelFor(gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-            initGasField(i, j, k, Yrad, T, P, dx, plo, phi);
-            getRadProp(i, j, k, Yrad, T, P, kappa, kpco2, kph2o, kpco);
+            initGasField(i, j, k, Yco2, Yh2o, Yco, T, P, dx, plo, phi);
+            getRadPropGas(
+                i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
         });
     }
 
@@ -136,8 +138,10 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
         std::string pltfile("plt");
         ppa.query("plot_file", pltfile);
 
-        MultiFab VarPlt(ba, dm, num_rad_species + 3, num_grow);
-        MultiFab::Copy(VarPlt, mass_frac_rad, 0, 0, num_rad_species, num_grow);
+        MultiFab VarPlt(ba, dm, 6, num_grow);
+        MultiFab::Copy(VarPlt, y_co2, 0, 0, 1, num_grow);
+        MultiFab::Copy(VarPlt, y_h2o, 0, 1, 1, num_grow);
+        MultiFab::Copy(VarPlt, y_co, 0, 2, 1, num_grow);
         MultiFab::Copy(VarPlt, temperature, 0, 3, 1, num_grow);
         MultiFab::Copy(VarPlt, pressure, 0, 4, 1, num_grow);
         MultiFab::Copy(VarPlt, absc, 0, 5, 1, num_grow);
