@@ -18,13 +18,6 @@ target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_te
 target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
-if(PELERAD_ENABLE_EB)
-add_executable(PeleRad_POneSolveEB.exe tstPOneSolveEB.cpp ut_main.cpp)
-target_include_directories(PeleRad_POneSolveEB.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG  ${AMREX_HOME_DIR}/Src/EB)
-target_link_libraries(PeleRad_POneSolveEB.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
-target_compile_definitions(PeleRad_POneSolveEB.exe PRIVATE BOOST_TEST_DYN_LINK)
-add_test(NAME PeleRad_POneSolveEB_Test COMMAND ./PeleRad_POneSolveEB.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSolveEB")
-else()
 add_executable(PeleRad_POneSingle.exe tstPOneSingle.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingle.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
 target_link_libraries(PeleRad_POneSingle.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
@@ -48,7 +41,6 @@ target_include_directories(PeleRad_POneMultiAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/
 target_link_libraries(PeleRad_POneMultiAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
 target_compile_definitions(PeleRad_POneMultiAF.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_POneMultiAF_Test COMMAND ./PeleRad_POneMultiAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiAF" )
-endif()
 
 if(PELERAD_ENABLE_MPI)
 add_executable(PeleRad_AmrexParallelFor.exe tstAmrexParallelFor.cpp ut_main.cpp)
