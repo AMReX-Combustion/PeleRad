@@ -1,3 +1,6 @@
+#ifndef PONEMULTI_HPP
+#define PONEMULTI_HPP
+
 #include <AMRParam.hpp>
 #include <AMReX_FArrayBox.H>
 #include <AMReX_MLABecLaplacian.H>
@@ -8,6 +11,7 @@
 
 namespace PeleRad
 {
+
 class POneMulti
 {
 private:
@@ -32,6 +36,8 @@ public:
 
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
+
+    constexpr POneMulti() = default;
 
     // constructor
     POneMulti(MLMGParam const& mlmgpp,
@@ -119,4 +125,7 @@ public:
             GetVecOfPtrs(solution_), GetVecOfConstPtrs(rhs_), tol_rel, tol_abs);
     }
 };
+
 }
+
+#endif

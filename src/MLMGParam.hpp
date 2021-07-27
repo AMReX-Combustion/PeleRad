@@ -5,6 +5,7 @@
 
 namespace PeleRad
 {
+
 struct MLMGParam
 {
 public:
@@ -28,7 +29,7 @@ public:
     int fine_level_solve_only_;
     bool use_hypre_;
 
-    MLMGParam() = default;
+    constexpr MLMGParam() = default;
 
     AMREX_GPU_HOST
     MLMGParam(const amrex::ParmParse& pp) : pp_(pp)
@@ -52,5 +53,7 @@ public:
         pp_.query("use_hypre", use_hypre_);
     }
 };
+
 }
+
 #endif

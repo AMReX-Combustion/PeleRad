@@ -1,3 +1,6 @@
+#ifndef PONESINGLE_HPP
+#define PONESINGLE_HPP
+
 #include <AMRParam.hpp>
 #include <AMReX_FArrayBox.H>
 #include <AMReX_MLABecLaplacian.H>
@@ -8,6 +11,7 @@
 
 namespace PeleRad
 {
+
 class POneSingle
 {
 private:
@@ -32,6 +36,8 @@ public:
 
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
+
+    constexpr POneSingle() = default;
 
     // constructor
     POneSingle(MLMGParam const& mlmgpp,
@@ -113,4 +119,7 @@ public:
         mlmg.solve({ &solution }, { &rhs }, tol_rel, tol_abs);
     }
 };
+
 }
+
+#endif

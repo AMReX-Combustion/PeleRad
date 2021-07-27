@@ -20,7 +20,7 @@ public:
     int prob_type_;
     std::string plot_file_name_;
 
-    AMRParam() = default;
+    constexpr AMRParam() = default;
 
     AMREX_GPU_HOST
     AMRParam(const amrex::ParmParse& pp) : pp_(pp)
@@ -37,5 +37,6 @@ public:
         pp.query("plot_file_name", plot_file_name_);
     }
 };
+
 }
 #endif
