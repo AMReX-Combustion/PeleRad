@@ -37,7 +37,7 @@ public:
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
 
-    constexpr POneSingle() = default;
+    POneSingle() = default;
 
     // constructor
     POneSingle(MLMGParam const& mlmgpp,

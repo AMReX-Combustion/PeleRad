@@ -45,6 +45,11 @@ install(EXPORT PeleRadTargets
   DESTINATION lib/cmake/PeleRad
 )
 
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
     "None was specified to CMAKE_BUILD_TYPE, setting build type to Debug."
