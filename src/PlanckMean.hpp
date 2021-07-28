@@ -24,7 +24,7 @@ private:
     amrex::GpuArray<amrex::Real, 126ul> kpsoot_;
 
 public:
-    PlanckMean() = default;
+    constexpr PlanckMean() = default;
 
     AMREX_GPU_HOST
     PlanckMean(std::string data_path)
@@ -99,4 +99,5 @@ public:
 };
 
 }
+
 #endif
