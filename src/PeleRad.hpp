@@ -1,87 +1,208 @@
 #ifndef RADIATION_HPP
 #define RADIATION_HPP
 
+//#include <AMRParam.hpp>
+//#include <MLMGParam.hpp>
+#include <POneSingle.hpp>
+#include <PlanckMean.hpp>
+#include <SpectralModels.hpp>
+
 namespace PeleRad
 {
 
 class Radiation
 {
 private:
-    AMRParam amrpp_;
-    MLMGParam mlmgpp_;
+    //    AMRParam amrpp_;
+    //    MLMGParam mlmgpp_;
+
+    //    amrex::ParmParse const& pp_;
+
+    int oldGrow_;
+    int newGrow_;
 
     PlanckMean radprop;
 
-    amrex::Vector<amrex::MultiFab> absc;
-    amrex::Vector<amrex::MultiFab> acoef;
-    amrex::Vector<amrex::MultiFab> bcoef;
-    amrex::Vector<amrex::MultiFab> robin_a;
-    amrex::Vector<amrex::MultiFab> robin_b;
-    amrex::Vector<amrex::MultiFab> robin_c;
+    amrex::Geometry const& geom_;
+    amrex::BoxArray const& grids_;
+    amrex::DistributionMapping const& dmap_;
+
+    amrex::MultiFab solution_;
+    amrex::MultiFab rhs_;
+    amrex::MultiFab acoef_;
+    amrex::MultiFab bcoef_;
+    amrex::MultiFab robin_a_;
+    amrex::MultiFab robin_b_;
+    amrex::MultiFab robin_f_;
+
+    amrex::MultiFab absc_;
 
 public:
-    //radiative heat source term
-    amrex::Array4<amrex::Real> radsrc;
+    AMREX_GPU_HOST
+    Radiation(amrex::Geometry const& geom, amrex::BoxArray const& grids,
+        amrex::DistributionMapping const& dmap)
+        : geom_(geom), grids_(grids), dmap_(dmap)
+    {
+        solution_.define(
+            grids_, dmap_, 1, 1); // one ghost cell to store boundary conditions
+        rhs_.define(grids_, dmap_, 1, 0);
+        acoef_.define(grids_, dmap_, 1, 0);
+        bcoef_.define(
+            grids_, dmap_, 1, 1); // one ghost cell for averaging to faces
+        robin_a_.define(grids_, dmap_, 1, 1);
+        robin_b_.define(grids_, dmap_, 1, 1);
+        robin_f_.define(grids_, dmap_, 1, 1);
+        absc_.define(grids_, dmap_, 1, 0);
 
-    constexpr Radiation() = default;
+        solution_.setVal(0.0, 0, 1, amrex::IntVect(0));
+
+        loadSpecModel();
+    }
 
     AMREX_GPU_HOST
-    constexpr Radiation(amrex::ParmParse const& pp) 
+    void loadSpecModel()
     {
-      amrpp_(pp);
-      mlmgpp_(mlmgpp);
-      loadSpecModel();    
-    }
-
-    void loadSpecModel(){
         std::string data_path;
-        data_path = "../../data/kpDB/";
+        data_path = "/ccs/home/gwjgavin/Pele_dev/PeleRad/data/kpDB/";
 
-        radprop(data_path);
+        radprop.load(data_path);
+
+        std::cout << "The radiative property database is loaded" << std::endl;
     }
 
-    void updateSpecProp()
+    void readRadParams(amrex::ParmParse const& pp) { }
+
+    void updateSpecProp(amrex::MFIter const& mfi,
+        amrex::Array4<const amrex::Real> const& Yco2,
+        amrex::Array4<const amrex::Real> const& Yh2o,
+        amrex::Array4<const amrex::Real> const& Yco,
+        amrex::Array4<const amrex::Real> const& T,
+        amrex::Array4<const amrex::Real> const& P)
     {
-        auto const&kpco2 = radprop.kpco2();
-        auto const&kpco2 = radprop.kph2o();
-        auto const&kpco = radprop.kpco();
-        auto const&kpsoot = radprop.kpsoot();
-        for(int ilev = 0; ilev < nlevels; ++ilev)
-        {
-            for(amrex::MFIter mfi(); mfi.isValid(); ++mfi)
-            {
-                amrex::Box const& bx = mfi.validbox();
-                amrex::Box const& gbx = amrex::grow(bx,1);
-                auto const& Yco2 = y_co2[ilev].array(mfi);
-                auto const& Yh2o = y_h2o[ilev].array(mfi);
-                auto const& Yco = y_co[ilev].array(mfi);
-                auto const& fv = soot_fv_rad[ilev].array(mfi);
-                auto const& T = temperature[ilev].array(mfi);
-                auto const& P = pressure[ilev].array(mfi);
-                auto const& kappa = absc[ilev].array(mfi);
+        std::cout << "update radiative properties" << std::endl;
+        auto const& kpco2 = radprop.kpco2();
+        auto const& kph2o = radprop.kph2o();
+        auto const& kpco  = radprop.kpco();
 
-                amrex::ParallelFor(
-                    bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                    getRadPropGas(i,j,k,Yco2,Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
-                });
+        //        auto const&kpsoot = radprop.kpsoot();
+        amrex::Box const& bx  = mfi.validbox();
+        amrex::Box const& gbx = mfi.growntilebox(1);
 
-                amrex::ParallelFor(
-                    bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                    getRadPropSoot(i,j,k, fv, T, kappa, kpsoot);
-                });
-            }
-        }  
+        auto kappa       = absc_.array(mfi);
+        auto rhsfab      = rhs_.array(mfi);
+        auto alphafab    = acoef_.array(mfi);
+        auto betafab     = bcoef_.array(mfi);
+        auto robin_a_fab = robin_a_.array(mfi);
+        auto robin_b_fab = robin_b_.array(mfi);
+        auto robin_f_fab = robin_f_.array(mfi);
+
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                RadProp::getRadPropGas(
+                    i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+            });
+
+        amrex::ParallelFor(
+            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                betafab(i, j, k) = 0.1;
+
+                if (bx.contains(i, j, k))
+                {
+                    double ka        = std::max(0.1, kappa(i, j, k));
+                    betafab(i, j, k) = 1.0 / ka;
+                    rhsfab(i, j, k)
+                        = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0);
+                    alphafab(i, j, k) = ka;
+                }
+
+                // Robin BC
+                /*
+                bool robin_cell = false;
+                double sign     = 1.0;
+                if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
+                {
+                    if (i > dhi.x)
+                    {
+                        robin_cell = true;
+                        sign       = -1.0;
+                    }
+
+                    if (i < dlo.x)
+                    {
+                        robin_cell = true;
+                        sign       = 1.0;
+                    }
+                }
+                else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
+                {
+                    if (j > dhi.y)
+                    {
+                        robin_cell = true;
+                        sign       = -1.0;
+                    }
+                    if (j < dlo.y)
+                    {
+                        robin_cell = true;
+                        sign       = 1.0;
+                    }
+                }
+                else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
+                {
+                    if (k > dhi.z)
+                    {
+                        robin_cell = true;
+                        sign = -1.0;
+                    }
+                    if (k < dlo.z)
+                    {
+                        robin_cell = true;
+                        sign = 1.0;
+                    }
+                }
+
+                if (robin_cell)
+                {
+                    robin_a_fab(i, j, k) = beta(i, j, k);
+                    robin_b_fab(i, j, k) = -4.0 / 3.0 * sign;
+
+                    robin_f_fab(i, j, k) = 0.0;
+                }
+    */
+            });
+
+        /*        amrex::ParallelFor(
+                  bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                  getRadPropSoot(i,j,k, fv, T, kappa, kpsoot);
+                });*/
     }
 
-    void addRadSrc(
-      const amrex::Box& vbox, 
-      Array4<const Real> const& Qstate,
-      Real const time,
-      Real const dt) {}
+    void evaluateRad(amrex::MultiFab& rad_src)
+    {
+        std::cout << "evaluateRad() is called" << std::endl;
+        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
+            amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic,
+            amrex::LinOpBCType::Neumann) };
+        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
+            amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic,
+            amrex::LinOpBCType::Neumann) };
 
-    void evaluateRad()
+        amrex::ParmParse pp("pelerad");
+        std::cout << "before the mlmgpp" << std::endl;
+        MLMGParam mlmgpp(pp);
+        std::cout << "before the rte constructor" << std::endl;
+
+        POneSingle rte(mlmgpp, geom_, grids_, dmap_, solution_, rhs_, acoef_,
+            bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
+        rte.solve();
+        rte.calcRadSource(rad_src);
+    }
+
+    void setIndices(RadComps radIndx)
+    {
+        // do sth
+    }
 };
 
-}  // namespace PeleRad
+} // namespace PeleRad
 
 #endif

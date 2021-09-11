@@ -67,7 +67,7 @@ namespace RadProp
         absc(i, j, k) = yco2(i, j, k) * kp_co2 + yh2o(i, j, k) * kp_h2o
                         + yco(i, j, k) * kp_co;
 
-        absc(i, j, k) *= pressure(i, j, k) * 100.0;
+        absc(i, j, k) *= pressure(i, j, k) / 1.0e5 * 100.0;
     }
 
     AMREX_GPU_HOST_DEVICE

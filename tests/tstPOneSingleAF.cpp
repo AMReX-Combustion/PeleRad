@@ -33,7 +33,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0;
+    pressure(i, j, k) = 1.0e5;
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));

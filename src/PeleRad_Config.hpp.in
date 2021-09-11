@@ -1,0 +1,6 @@
+#ifndef PELERAD_CONFIG_HPP
+#define PELERAD_CONFIG_HPP
+
+#cmakedefine PELERAD_ENABLE_MPI
+
+#endif

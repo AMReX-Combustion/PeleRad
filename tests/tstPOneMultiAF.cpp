@@ -33,7 +33,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0;
+    pressure(i, j, k) = 1.0e5;
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
@@ -208,12 +208,11 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rafab  = robin_a[ilev].array(mfi);
             auto const& rbfab  = robin_b[ilev].array(mfi);
             auto const& rffab  = robin_f[ilev].array(mfi);
-            amrex::ParallelFor(
-                gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                    actual_init_coefs(i, j, k, rhsfab, acfab, bcfab, rafab,
-                        rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx, kappa,
-                        T);
-                });
+            amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE(
+                                        int i, int j, int k) noexcept {
+                actual_init_coefs(i, j, k, rhsfab, acfab, bcfab, rafab, rbfab,
+                    rffab, prob_lo, prob_hi, dx, dlo, dhi, bx, kappa, T);
+            });
         }
 
         solution[ilev].setVal(0.0, 0, 1, amrex::IntVect(0));
