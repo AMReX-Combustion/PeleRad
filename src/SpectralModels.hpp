@@ -67,7 +67,8 @@ namespace RadProp
         absc(i, j, k) = yco2(i, j, k) * kp_co2 + yh2o(i, j, k) * kp_h2o
                         + yco(i, j, k) * kp_co;
 
-        absc(i, j, k) *= pressure(i, j, k) / 1.0e5 * 100.0;
+        // absc(i, j, k) *= pressure(i, j, k) / 1.0e5 * 100.0; //si, in m-1
+        absc(i, j, k) *= pressure(i, j, k) / 1.0e6; // cgs, in cm-1
     }
 
     AMREX_GPU_HOST_DEVICE
@@ -85,7 +86,9 @@ namespace RadProp
 
         amrex::Real kp_soot = interpk(TindexL, weight, kdatasoot);
 
-        absc(i, j, k) += fv(i, j, k) * kp_soot * 100.0;
+        // absc(i, j, k) += fv(i, j, k) * kp_soot * 100.0; //si, in m-1
+        absc(i, j, k) += fv(i, j, k) * kp_soot; // cgs, in cm-1
+        // if(j==0&&k==0) printf("fv=%g, kp_soot=%g \n", fv(i,j,k), kp_soot);
     }
 
 }

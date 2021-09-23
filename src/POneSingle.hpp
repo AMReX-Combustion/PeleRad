@@ -60,10 +60,9 @@ public:
           hibc_(hibc),
           robin_a_(robin_a),
           robin_b_(robin_b),
-          robin_f_(robin_f)
-    {
-        std::cout << "linear solver constructor called" << std::endl;
-    };
+          robin_f_(robin_f) {
+              // std::cout << "linear solver constructor called" << std::endl;
+          };
 
     void solve()
     {
@@ -126,7 +125,7 @@ public:
 
     void calcRadSource(amrex::MultiFab& rad_src)
     {
-        std::cout << "calcRadSource() is called..." << std::endl;
+        // std::cout << "calcRadSource is called" << std::endl;
         for (amrex::MFIter mfi(rad_src); mfi.isValid(); ++mfi)
         {
             amrex::Box const& bx = mfi.validbox();
