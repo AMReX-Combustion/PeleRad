@@ -140,6 +140,7 @@ public:
                 bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                     radfab(i, j, k, 4)
                         = acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
+                    //if(i>120 && j==0 && k==0)printf("src 4, i=%d, kappa=%g, G=%g, emission=%g, radfab = %g. \n", i, acfab(i,0,0),solfab(i,0,0),rhsfab(i,0,0),radfab(i,0,0,4));
                 });
         }
     }

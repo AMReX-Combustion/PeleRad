@@ -17,14 +17,18 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& plo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& phi)
 {
-    amrex::Real xc = (phi[0] + plo[0]) * 0.5;
-    amrex::Real yc = (phi[1] + plo[1]) * 0.5;
+    amrex::Real coef = 100;
+    amrex::Real xc   = (phi[0] + plo[0]) * 0.5;
+    amrex::Real yc   = (phi[1] + plo[1]) * 0.5;
 
     amrex::Real x = plo[0] + (i + 0.5) * dx[0];
     amrex::Real y = plo[1] + (j + 0.5) * dx[1];
     amrex::Real z = plo[2] + (k + 0.5) * dx[2];
 
     amrex::Real r = std::sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
+
+    z /= coef;
+    r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
@@ -33,7 +37,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0e5;
+    pressure(i, j, k) = 1.0e6; // cgs
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
@@ -60,34 +64,32 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& alpha,
     amrex::Array4<amrex::Real> const& beta,
-    amrex::Array4<amrex::Real> const& robin_a,
-    amrex::Array4<amrex::Real> const& robin_b,
-    amrex::Array4<amrex::Real> const& robin_f,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_lo,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_hi,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
     amrex::Dim3 const& dlo, amrex::Dim3 const& dhi, amrex::Box const& vbx,
     amrex::Array4<amrex::Real> const& absc, amrex::Array4<amrex::Real> const& T)
 {
-    amrex::Real x = prob_lo[0] + dx[0] * (i + 0.5);
-    amrex::Real y = prob_lo[1] + dx[1] * (j + 0.5);
-    amrex::Real z = prob_lo[2] + dx[2] * (k + 0.5);
-
-    x = amrex::min(amrex::max(x, prob_lo[0]), prob_hi[0]);
-    y = amrex::min(amrex::max(y, prob_lo[1]), prob_hi[1]);
-    z = amrex::min(amrex::max(z, prob_lo[2]), prob_hi[2]);
-
-    beta(i, j, k) = 1.0;
-
+    beta(i, j, k) = 100;
     if (vbx.contains(i, j, k))
     {
-        double ka     = std::max(1.0, absc(i, j, k));
-        beta(i, j, k) = 1.0 / ka;
-
+        double ka      = std::max(1.0, absc(i, j, k));
+        beta(i, j, k)  = 1.0 / ka;
         rhs(i, j, k)   = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0);
         alpha(i, j, k) = ka;
-    }
 
+        if (i == dlo.x) beta(i - 1, j, k) = beta(dlo.x, j, k);
+        if (i == dhi.x) beta(i + 1, j, k) = beta(dhi.x, j, k);
+        if (j == dlo.y) beta(i, j - 1, k) = beta(i, dlo.y, k);
+        if (j == dhi.y) beta(i, j + 1, k) = beta(i, dhi.y, k);
+    }
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
+    int k, amrex::Array4<amrex::Real> const& alpha,
+    amrex::Array4<amrex::Real> const& beta,
+    amrex::Array4<amrex::Real> const& robin_a,
+    amrex::Array4<amrex::Real> const& robin_b,
+    amrex::Array4<amrex::Real> const& robin_f, amrex::Dim3 const& dlo,
+    amrex::Dim3 const& dhi, amrex::Array4<amrex::Real> const& T)
+{
     // Robin BC
     bool robin_cell = false;
     double sign     = 1.0;
@@ -127,8 +129,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
 
     if (robin_cell)
     {
-        robin_a(i, j, k) = beta(i, j, k);
-        robin_b(i, j, k) = -4.0 / 3.0 * sign;
+        // robin_a(i, j, k) = 1.0/beta(i, j, k);
+        robin_a(i, j, k) = 0.01;
+        robin_b(i, j, k) = -2.0 / 3.0 * sign;
 
         robin_f(i, j, k) = 0.0;
     }
@@ -210,11 +213,15 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rffab  = robin_f[ilev].array(mfi);
             amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE(
                                         int i, int j, int k) noexcept {
-                actual_init_coefs(i, j, k, rhsfab, acfab, bcfab, rafab, rbfab,
-                    rffab, prob_lo, prob_hi, dx, dlo, dhi, bx, kappa, T);
+                actual_init_coefs(i, j, k, rhsfab, acfab, bcfab, dlo, dhi, bx, kappa, T);
             });
-        }
 
+            amrex::ParallelFor(
+                gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                    actual_init_bc_coefs(i, j, k, acfab, bcfab, rafab, rbfab,
+                        rffab, dlo, dhi, T);
+                });
+        }
         solution[ilev].setVal(0.0, 0, 1, amrex::IntVect(0));
     }
 }
@@ -246,7 +253,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
     dmap.resize(nlevels);
 
     amrex::RealBox rb(
-        { AMREX_D_DECL(0.0, 0.0, 0.0) }, { AMREX_D_DECL(0.125, 0.125, 0.75) });
+        { AMREX_D_DECL(0.0, 0.0, 0.0) }, { AMREX_D_DECL(12.5, 12.5, 75) });
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 

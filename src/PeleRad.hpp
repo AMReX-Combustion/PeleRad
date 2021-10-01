@@ -92,8 +92,16 @@ public:
         auto const& kpco  = radprop.kpco();
 
         //        auto const&kpsoot = radprop.kpsoot();
-        amrex::Box const& bx  = mfi.validbox();
-        amrex::Box const& gbx = mfi.growntilebox(1);
+        amrex::Box const& bx = mfi.validbox();
+        // amrex::Box const& gbx = mfi.growntilebox(1);
+
+        amrex::Box gbxs = geom_.Domain();
+        // auto const ghi = gbxs.bigEnd();
+
+        auto const dlo = amrex::lbound(geom_.Domain());
+        auto const dhi = amrex::ubound(geom_.Domain());
+
+        // std::cout<<"dlo.x="<<dlo.x<<",dhi.x="<<dhi.x<<std::endl;
 
         auto kappa       = absc_.array(mfi);
         auto rhsfab      = rhs_.array(mfi);
@@ -118,20 +126,58 @@ public:
 #endif
 
         amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                betafab(i, j, k) = 0.00001;
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                // betafab(i, j, k) = 1.0/0.00001;
 
-                if (bx.contains(i, j, k))
+                // if (bx.contains(i, j, k))
+                //{
+                double ka        = std::max(0.00001, kappa(i, j, k));
+                betafab(i, j, k) = 1.0 / ka;
+                // rhsfab(i, j, k)
+                //    = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0); //si
+                rhsfab(i, j, k)
+                    = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0); // cgs
+                alphafab(i, j, k) = ka;
+
+                // left boundary
+                if (i == dlo.x)
                 {
-                    double ka        = std::max(0.00001, kappa(i, j, k));
-                    betafab(i, j, k) = 1.0 / ka;
-                    // rhsfab(i, j, k)
-                    //    = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0); //si
-                    rhsfab(i, j, k)
-                        = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0); // cgs
-                    alphafab(i, j, k) = ka;
+                    betafab(i - 1, j, k)     = betafab(i, j, k);
+                    robin_a_fab(i - 1, j, k) = 1.0 / betafab(i, j, k);
+                    robin_b_fab(i - 1, j, k) = -2.0 / 3.0 * 1.0;
+                    // robin_f_fab(i-1, j, k) = 0.0; //cold wall
+                    robin_f_fab(i - 1, j, k) = rhsfab(i, j, k); // Tgas
+                    // printf("i=%d, robin_f=%g, beta=%g. \n", i-1,
+                    // robin_f_fab(i-1,j,k), betafab(i-1,j,k));
                 }
+                if (i == dhi.x)
+                {
+                    betafab(i + 1, j, k) = betafab(i, j, k);
+                    // robin_a_fab(i+1, j, k) = betafab(i, j, k);
+                    // robin_b_fab(i+1, j, k) = -2.0 / 3.0 * (-1.0);
+                    // robin_f_fab(i+1, j, k) = 0.0; //cold wall
+                    // robin_f_fab(i+1, j, k) = rhsfab(i,j,k); //Tgas
+                    // printf("i=%d, robin_f=%g, beta=%g. \n", i+1,
+                    // robin_f_fab(i+1,j,k), betafab(i+1,j,k));
+                }
+                if (j == dlo.y) betafab(i, j - 1, k) = betafab(i, j, k);
+                if (j == dhi.y) betafab(i, j + 1, k) = betafab(i, j, k);
+                if (k == dlo.z) betafab(i, j, k - 1) = betafab(i, j, k);
+                if (k == dhi.z) betafab(i, j, k + 1) = betafab(i, j, k);
 
+                //}
+                /*
+                    if(j==0 && k==0) {
+                         printf("i=%d, alpha=%g, beta=%g. \n", i,
+                   alphafab(i,0,0), betafab(i,0,0)); if(i==0)
+                   printf("beta(-1)=%g, robin_f_fab(-1) \n", i, betafab(-1,0,0),
+                   robin_f_fab(-1,0,0)); if(i==127) printf("beta(128)=%g,
+                   robin_f_fab(128) \n", i, betafab(128,0,0),
+                   robin_f_fab(128,0,0));
+                    }
+                */
+
+                // printf("dlo.x=%d., dhi.x=%d \n", dlo.x, dhi.x);
                 // Robin BC
                 /*
                 bool robin_cell = false;
@@ -179,12 +225,11 @@ public:
 
                 if (robin_cell)
                 {
-                    robin_a_fab(i, j, k) = beta(i, j, k);
+                    robin_a_fab(i, j, k) = betafab(i, j, k);
                     robin_b_fab(i, j, k) = -4.0 / 3.0 * sign;
 
                     robin_f_fab(i, j, k) = 0.0;
-                }
-    */
+                }*/
             });
     }
 
@@ -192,7 +237,7 @@ public:
     {
         // std::cout << "evaluateRad() is called" << std::endl;
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-            amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
+            amrex::LinOpBCType::Robin, amrex::LinOpBCType::Periodic,
             amrex::LinOpBCType::Periodic) };
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
             amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
@@ -211,6 +256,7 @@ public:
 
         rte.calcRadSource(rad_src);
         // write();
+        // amrex::Abort();
     }
 
     RadComps const readRadIndices() const { return rc_; }
