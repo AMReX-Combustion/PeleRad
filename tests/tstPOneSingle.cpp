@@ -66,7 +66,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
         if (robin_cell)
         {
             robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+            robin_b(i, j, k) = -2.0 / 3.0 * sign;
 
             robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                                + robin_b(i, j, k) * npioverL * coscossin;
@@ -89,7 +89,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
         if (robin_cell)
         {
             robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+            robin_b(i, j, k) = -2.0 / 3.0 * sign;
 
             double msinsinsin = -std::sin(npioverL * x) * std::sin(npioverL * y)
                                 * std::sin(npioverL * z);
@@ -114,7 +114,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
         if (robin_cell)
         {
             robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+            robin_b(i, j, k) = -2.0 / 3.0 * sign;
 
             double sincoscos = -std::sin(npioverL * x) * std::cos(npioverL * y)
                                * std::cos(npioverL * z);
