@@ -48,48 +48,26 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
 
     // Robin BC
     bool robin_cell = false;
-    double sign     = 1.0;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x)
-        {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-
-        if (i < dlo.x)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
+        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
 
         if (robin_cell)
         {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -2.0 / 3.0 * sign;
-
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
             robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                                + robin_b(i, j, k) * npioverL * coscossin;
         }
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y)
-        {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-
-        if (j < dlo.y)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
+        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
 
         if (robin_cell)
         {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -2.0 / 3.0 * sign;
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
 
             double msinsinsin = -std::sin(npioverL * x) * std::sin(npioverL * y)
                                 * std::sin(npioverL * z);
@@ -101,20 +79,12 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
 
     else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
     {
-        if (k > dhi.z)
-        {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-        if (k < dlo.z)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
+        if (k > dhi.z || k < dlo.z) { robin_cell = true; }
+
         if (robin_cell)
         {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -2.0 / 3.0 * sign;
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
 
             double sincoscos = -std::sin(npioverL * x) * std::cos(npioverL * y)
                                * std::cos(npioverL * z);
@@ -146,8 +116,9 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rafab     = robin_a.array(mfi);
         auto const& rbfab     = robin_b.array(mfi);
         auto const& rffab     = robin_f.array(mfi);
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
                     rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
             });

@@ -1,0 +1,15 @@
+#amr
+max_level = 0
+n_cell = 96
+max_grid_size = 32
+plot_file_name = "pltPOne1D"
+
+#mlmg
+use_hypre = 0
+verbose = 2
+bottom_verbose = 1
+max_iter = 20
+max_fmg_iter = 0
+max_coarsening_level = 30
+reltol = 1.e-6
+abstol = 1.e-6

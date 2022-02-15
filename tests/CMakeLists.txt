@@ -18,6 +18,12 @@ target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_te
 target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
+add_executable(PeleRad_POne1D.exe tstPOne1D.cpp ut_main.cpp)
+target_include_directories(PeleRad_POne1D.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
+target_link_libraries(PeleRad_POne1D.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
+target_compile_definitions(PeleRad_POne1D.exe PRIVATE BOOST_TEST_DYN_LINK)
+add_test(NAME PeleRad_POne1D_Test COMMAND ./PeleRad_POne1D.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOne1D" )
+
 add_executable(PeleRad_POneSingle.exe tstPOneSingle.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingle.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
 target_link_libraries(PeleRad_POneSingle.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
