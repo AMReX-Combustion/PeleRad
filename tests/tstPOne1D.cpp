@@ -112,7 +112,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp, amrex::Geometry& geom,
         geom, solution, rhs, acoef, bcoef, robin_a, robin_b, robin_f);
 }
 
-BOOST_AUTO_TEST_CASE(OneDHomo)
+BOOST_AUTO_TEST_CASE(POne1D)
 {
     amrex::ParmParse pp;
     PeleRad::AMRParam amrpp(pp);
