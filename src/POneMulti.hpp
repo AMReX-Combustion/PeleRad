@@ -124,6 +124,22 @@ public:
         mlmg.solve(
             GetVecOfPtrs(solution_), GetVecOfConstPtrs(rhs_), tol_rel, tol_abs);
     }
+
+/*
+    void calcRadSource(amrex::MFIter const& mfi,
+        amrex::Array4<amrex::Real>& radfab, int ilev)
+    {
+        amrex::Box const& bx = mfi.validbox();
+        auto const& rhsfab   = rhs_[ilev].array(mfi);
+        auto const& solfab   = solution_[ilev].array(mfi);
+        auto const& acfab    = acoef_[ilev].array(mfi);
+
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                radfab(i, j, k) += acfab(i, j, k) * solfab(i, j, k)- rhsfab(i, j, k);
+            });
+    }
+*/
 };
 
 }

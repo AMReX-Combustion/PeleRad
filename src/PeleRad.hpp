@@ -91,11 +91,11 @@ public:
         auto const& kph2o = radprop.kph2o();
         auto const& kpco  = radprop.kpco();
 
-        //        auto const&kpsoot = radprop.kpsoot();
+        // auto const&kpsoot = radprop.kpsoot();
         amrex::Box const& bx = mfi.validbox();
         // amrex::Box const& gbx = mfi.growntilebox(1);
 
-        amrex::Box gbxs = geom_.Domain();
+        // amrex::Box gbxs = geom_.Domain();
         // auto const ghi = gbxs.bigEnd();
 
         auto const dlo = amrex::lbound(geom_.Domain());
@@ -251,8 +251,6 @@ public:
         POneSingle rte(mlmgpp, geom_, grids_, dmap_, solution_, rhs_, acoef_,
             bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
         rte.solve();
-        // write();
-        // amrex::Abort();
 
         rte.calcRadSource(rad_src);
         // write();

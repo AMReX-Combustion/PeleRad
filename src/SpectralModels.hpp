@@ -88,7 +88,6 @@ namespace RadProp
 
         // absc(i, j, k) += fv(i, j, k) * kp_soot * 100.0; //si, in m-1
         absc(i, j, k) += fv(i, j, k) * kp_soot; // cgs, in cm-1
-        // if(j==0&&k==0) printf("fv=%g, kp_soot=%g \n", fv(i,j,k), kp_soot);
     }
 
 }
