@@ -14,3 +14,6 @@ max_fmg_iter = 0
 max_coarsening_level = 3
 reltol = 1.0e-4
 abstol = 1.0e-4
+linop_maxorder = 2
+agglomeration = 1
+consolidation = 1

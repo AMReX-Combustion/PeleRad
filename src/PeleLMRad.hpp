@@ -16,9 +16,7 @@ class Radiation
 {
 private:
     //    AMRParam amrpp_;
-    //    MLMGParam mlmgpp_;
-
-    //    amrex::ParmParse const& pp_;
+    MLMGParam mlmgpp_;
 
     PlanckMean radprop;
 
@@ -38,12 +36,15 @@ private:
 
     RadComps rc_;
 
+    std::unique_ptr<POneMulti> rte_;
+
 public:
     AMREX_GPU_HOST
     Radiation(amrex::Vector<amrex::Geometry> const& geom,
         amrex::Vector<amrex::BoxArray> const& grids,
-        amrex::Vector<amrex::DistributionMapping> const& dmap, RadComps rc)
-        : geom_(geom), grids_(grids), dmap_(dmap), rc_(rc)
+        amrex::Vector<amrex::DistributionMapping> const& dmap, RadComps rc,
+        amrex::ParmParse const& mlmgpp)
+        : geom_(geom), grids_(grids), dmap_(dmap), rc_(rc), mlmgpp_(mlmgpp)
     {
         rc_.checkIndices();
 
@@ -58,8 +59,20 @@ public:
         robin_f_.resize(nlevels);
         absc_.resize(nlevels);
 
+        std::cout << "Initialize variables in the radiation module..."
+                  << "\n";
         initVars(grids, dmap, nlevels);
         loadSpecModel();
+
+        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
+            amrex::LinOpBCType::Robin, amrex::LinOpBCType::Periodic,
+            amrex::LinOpBCType::Periodic) };
+        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
+            amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
+            amrex::LinOpBCType::Periodic) };
+
+        rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
+            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
     }
 
     AMREX_GPU_HOST
@@ -111,6 +124,7 @@ public:
             bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 RadProp::getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+                kappa(i, j, k) *= 10.0;
             });
 
 #ifdef PELELM_USE_SOOT
@@ -127,7 +141,7 @@ public:
 
                 if (bx.contains(i, j, k))
                 {
-                    double ka        = std::max(0.01, kappa(i, j, k)*100);
+                    double ka        = std::max(0.01, kappa(i, j, k) * 100);
                     betafab(i, j, k) = 1.0 / ka;
 
                     rhsfab(i, j, k) = 4.0 * ka * 5.67e-8
@@ -162,9 +176,6 @@ public:
                     robin_f_fab(i, j, k) = 0.0;
                 }
             });
-        std::cout << "-------------------------kappa_end--------------------"
-                  << "\n";
-        std::cout << kappa(10, 5, 0) << std::endl;
     }
 
     void initVars(amrex::Vector<amrex::BoxArray> const& grids,
@@ -189,6 +200,7 @@ public:
 
     void evaluateRad()
     {
+/*
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
             amrex::LinOpBCType::Robin, amrex::LinOpBCType::Periodic,
             amrex::LinOpBCType::Periodic) };
@@ -196,15 +208,11 @@ public:
             amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
             amrex::LinOpBCType::Periodic) };
 
-        amrex::ParmParse pp("pelerad");
-        MLMGParam mlmgpp(pp);
-
-        POneMulti rte(mlmgpp, geom_, grids_, dmap_, solution_, rhs_, acoef_,
-            bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
-
-        rte.solve();
-        // write();
-        rte.calcRadSource(rad_src);
+        POneMulti rte_(mlmgpp_, geom_, grids_, dmap_,
+            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
+            robin_f_);
+*/
+        rte_->solve();
     }
 
     void calcRadSource(amrex::MFIter const& mfi,
