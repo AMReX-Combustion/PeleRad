@@ -72,45 +72,45 @@ public:
           robin_b_(robin_b),
           robin_f_(robin_f)
     {
-      auto const max_coarsening_level = mlmgpp_.max_coarsening_level_;
-      auto const agglomeration = mlmgpp_.agglomeration_;
-      auto const consolidation = mlmgpp_.consolidation_;
-      auto const linop_maxorder = mlmgpp_.linop_maxorder_;
+        auto const max_coarsening_level = mlmgpp_.max_coarsening_level_;
+        auto const agglomeration        = mlmgpp_.agglomeration_;
+        auto const consolidation        = mlmgpp_.consolidation_;
+        auto const linop_maxorder       = mlmgpp_.linop_maxorder_;
 
-      amrex::LPInfo info;
-      info.setAgglomeration(agglomeration);
-      info.setConsolidation(consolidation);
-      info.setMaxCoarseningLevel(max_coarsening_level);
+        amrex::LPInfo info;
+        info.setAgglomeration(agglomeration);
+        info.setConsolidation(consolidation);
+        info.setMaxCoarseningLevel(max_coarsening_level);
 
-//      mlabec_.define(geom_, grids_, dmap_, info);
+        //      mlabec_.define(geom_, grids_, dmap_, info);
 
-      mlabec_ = std::make_unique<amrex::MLABecLaplacian>(geom_,grids_,dmap_, info);
+        mlabec_ = std::make_unique<amrex::MLABecLaplacian>(
+            geom_, grids_, dmap_, info);
 
-      mlabec_->setDomainBC(lobc_, hibc_);
-      mlabec_->setScalars(ascalar_, bscalar_);
-      mlabec_->setMaxOrder(linop_maxorder);
+        mlabec_->setDomainBC(lobc_, hibc_);
+        mlabec_->setScalars(ascalar_, bscalar_);
+        mlabec_->setMaxOrder(linop_maxorder);
 
-      auto const max_iter       = mlmgpp_.max_iter_;
-      auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
-      auto const verbose        = mlmgpp_.verbose_;
-      auto const bottom_verbose = mlmgpp_.bottom_verbose_;
-      auto const use_hypre      = mlmgpp_.use_hypre_;
-        
-      mlmg_ = std::make_unique<amrex::MLMG>(*mlabec_);
-      mlmg_->setMaxIter(max_iter);
-      mlmg_->setMaxFmgIter(max_fmg_iter);
-      mlmg_->setVerbose(verbose);
-      mlmg_->setBottomVerbose(bottom_verbose);
+        auto const max_iter       = mlmgpp_.max_iter_;
+        auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
+        auto const verbose        = mlmgpp_.verbose_;
+        auto const bottom_verbose = mlmgpp_.bottom_verbose_;
+        auto const use_hypre      = mlmgpp_.use_hypre_;
 
-      if (use_hypre)
-        mlmg_->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+        mlmg_ = std::make_unique<amrex::MLMG>(*mlabec_);
+        mlmg_->setMaxIter(max_iter);
+        mlmg_->setMaxFmgIter(max_fmg_iter);
+        mlmg_->setVerbose(verbose);
+        mlmg_->setBottomVerbose(bottom_verbose);
+
+        if (use_hypre) mlmg_->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
     }
 
     void solve()
     {
-      auto const nlevels = geom_.size();
+        auto const nlevels = geom_.size();
 
-//    amrex::MLABecLaplacian mlabec_(geom_, grids_, dmap_, info);
+        //    amrex::MLABecLaplacian mlabec_(geom_, grids_, dmap_, info);
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
@@ -138,21 +138,22 @@ public:
             mlabec_->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoef));
         }
 
-/*
-        amrex::MLMG mlmg_(*mlabec_);
+        /*
+                amrex::MLMG mlmg_(*mlabec_);
 
-        auto const max_iter       = mlmgpp_.max_iter_;
-        auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
-        auto const verbose        = mlmgpp_.verbose_;
-        auto const bottom_verbose = mlmgpp_.bottom_verbose_;
-        auto const use_hypre      = mlmgpp_.use_hypre_;
-        mlmg_.setMaxIter(max_iter);
-        mlmg_.setMaxFmgIter(max_fmg_iter);
-        mlmg_.setVerbose(verbose);
-        mlmg_.setBottomVerbose(bottom_verbose);
+                auto const max_iter       = mlmgpp_.max_iter_;
+                auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
+                auto const verbose        = mlmgpp_.verbose_;
+                auto const bottom_verbose = mlmgpp_.bottom_verbose_;
+                auto const use_hypre      = mlmgpp_.use_hypre_;
+                mlmg_.setMaxIter(max_iter);
+                mlmg_.setMaxFmgIter(max_fmg_iter);
+                mlmg_.setVerbose(verbose);
+                mlmg_.setBottomVerbose(bottom_verbose);
 
-        if (use_hypre) mlmg_.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
-*/
+                if (use_hypre)
+           mlmg_.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+        */
         auto const tol_rel = mlmgpp_.reltol_;
         auto const tol_abs = mlmgpp_.abstol_;
 

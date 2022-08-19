@@ -72,7 +72,8 @@ public:
             amrex::LinOpBCType::Periodic) };
 
         rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
-            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
+            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
+            robin_f_);
     }
 
     AMREX_GPU_HOST
@@ -137,7 +138,7 @@ public:
 
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                betafab(i, j, k) = 1.0 / 0.01;
+                betafab(i, j, k) = 1000.0;
 
                 if (bx.contains(i, j, k))
                 {
@@ -152,8 +153,18 @@ public:
                                       * std::pow(T(i, j, k),
                                           4.0);*/ // cgs
                     alphafab(i, j, k) = ka;
-                }
 
+/*                    if (i == dlo.x) betafab(i - 1, j, k) = betafab(dlo.x, j, k);
+                    if (i == dhi.x) betafab(i + 1, j, k) = betafab(dhi.x, j, k);
+                    if (j == dlo.y) betafab(i, j - 1, k) = betafab(i, dlo.y, k);
+                    if (j == dhi.y) betafab(i, j + 1, k) = betafab(i, dhi.y, k);
+                    if (k == dlo.z) betafab(i, j, k - 1) = betafab(i, j, dlo.z);
+                    if (k == dhi.z) betafab(i, j, k + 1) = betafab(i, j, dhi.z);*/
+                }
+//            });
+//
+//        amrex::ParallelFor(
+//            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 // Robin BC
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
@@ -200,18 +211,18 @@ public:
 
     void evaluateRad()
     {
-/*
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-            amrex::LinOpBCType::Robin, amrex::LinOpBCType::Periodic,
-            amrex::LinOpBCType::Periodic) };
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-            amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
-            amrex::LinOpBCType::Periodic) };
+        /*
+                amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc {
+           AMREX_D_DECL( amrex::LinOpBCType::Robin,
+           amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic) };
+                amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc {
+           AMREX_D_DECL( amrex::LinOpBCType::Neumann,
+           amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic) };
 
-        POneMulti rte_(mlmgpp_, geom_, grids_, dmap_,
-            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
-            robin_f_);
-*/
+                POneMulti rte_(mlmgpp_, geom_, grids_, dmap_,
+                    solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_,
+           robin_b_, robin_f_);
+        */
         rte_->solve();
     }
 
@@ -234,7 +245,7 @@ public:
 
     amrex::Vector<amrex::MultiFab> const& G() { return solution_; }
 
-    amrex::Vector<amrex::MultiFab> const& kappa() { return absc_; }
+    amrex::Vector<amrex::MultiFab> const& kappa() { return acoef_; }
 
     amrex::Vector<amrex::MultiFab> const& emis() { return rhs_; }
 

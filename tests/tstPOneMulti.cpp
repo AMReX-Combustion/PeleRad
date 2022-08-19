@@ -124,13 +124,11 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rafab     = robin_a[ilev].array(mfi);
             auto const& rbfab     = robin_b[ilev].array(mfi);
             auto const& rffab     = robin_f[ilev].array(mfi);
-            amrex::ParallelFor(gbx,
-                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-                {
-                    actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab,
-                        rafab, rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi,
-                        bx);
-                });
+            amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE(
+                                        int i, int j, int k) noexcept {
+                actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
+                    rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
+            });
         }
 
         amrex::MultiFab::Copy(exact_solution[ilev], solution[ilev], 0, 0, 1, 0);
@@ -156,7 +154,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
     int const max_grid_size = amrpp.max_grid_size_;
 
     // initialize mesh
-    std::cout << "initialize the mesh" << std::endl;
+    // std::cout << "initialize the mesh" << std::endl;
     geom.resize(nlevels);
     grids.resize(nlevels);
     dmap.resize(nlevels);
@@ -185,7 +183,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
     }
 
     // initialize variables
-    std::cout << "initialize the data" << std::endl;
+    // std::cout << "initialize the data" << std::endl;
 
     solution.resize(nlevels);
     rhs.resize(nlevels);
@@ -231,6 +229,7 @@ double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact)
 
 BOOST_AUTO_TEST_CASE(p1_robin)
 {
+    //    std::cout << "test starts ... \n";
     amrex::ParmParse pp;
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
@@ -253,10 +252,10 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     amrex::Vector<amrex::MultiFab> robin_b;
     amrex::Vector<amrex::MultiFab> robin_f;
 
-    std::cout << "initialize data ... \n";
+    //    std::cout << "initialize data ... \n";
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, exact_solution,
         acoef, bcoef, robin_a, robin_b, robin_f);
-    std::cout << "construct the PDE ... \n";
+    //    std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
         amrex::LinOpBCType::Neumann) };
@@ -265,10 +264,11 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         amrex::LinOpBCType::Neumann) };
     PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
+    //    std::cout << "solve the PDE ... \n";
     rte.solve();
 
-    double eps = 0.0;
+    double eps     = 0.0;
+    double eps_max = 0.0;
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
         auto dx          = geom[ilev].CellSize();
@@ -277,6 +277,7 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         eps *= dvol;
         std::cout << "Level=" << ilev << ", normalized L1 norm:" << eps
                   << std::endl;
+        if (eps > eps_max) eps_max = eps;
     }
 
     // plot results
@@ -286,7 +287,7 @@ BOOST_AUTO_TEST_CASE(p1_robin)
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
-            std::cout << "write the results ... \n";
+            // std::cout << "write the results ... \n";
             plotmf[ilev].define(grids[ilev], dmap[ilev], 4, 0);
             amrex::MultiFab::Copy(plotmf[ilev], solution[ilev], 0, 0, 1, 0);
             amrex::MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 1, 1, 0);
@@ -305,5 +306,5 @@ BOOST_AUTO_TEST_CASE(p1_robin)
                 nlevels, amrex::IntVect { ref_ratio }));
     }
 
-    BOOST_TEST(eps < 1e-1);
+    BOOST_TEST(eps_max < 1e-2);
 }

@@ -31,7 +31,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
-                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
+                                * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
     amrex::Real expTz = std::exp(-((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z))
                                  * ((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z)));
 
@@ -153,9 +153,8 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& P         = pressure.array(mfi);
         auto const& kappa     = absc.array(mfi);
 
-        amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-            {
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 initGasField(
                     i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx, prob_lo, prob_hi);
                 getRadPropGas(
@@ -164,9 +163,10 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
 
         // if soot exists
         // cudaDeviceSynchronize();
-        amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-            { getRadPropSoot(i, j, k, fv, T, kappa, kpsoot); });
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
+            });
 
         auto const& rhsfab = rhs.array(mfi);
         auto const& acfab  = acoef.array(mfi);
@@ -175,25 +175,22 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rbfab  = robin_b.array(mfi);
         auto const& rffab  = robin_f.array(mfi);
 
-        amrex::ParallelFor(gbx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(
+            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 actual_init_coefs(
                     i, j, k, rhsfab, acfab, bcfab, dlo, dhi, bx, kappa, T);
             });
 
         // cudaDeviceSynchronize();
 
-        amrex::ParallelFor(gbx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-            {
+        amrex::ParallelFor(
+            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 actual_init_bc_coefs(
                     i, j, k, acfab, bcfab, rafab, rbfab, rffab, dlo, dhi, T);
             });
     }
 
     solution.setVal(0.0, 0, 1, amrex::IntVect(0));
-    std::cout << "bcoef.min=" << bcoef.min(0) << std::endl;
-    std::cout << "bcoef.max=" << bcoef.max(0) << std::endl;
 }
 
 void initMeshandData(PeleRad::AMRParam const& amrpp, amrex::Geometry& geom,
@@ -213,9 +210,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp, amrex::Geometry& geom,
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 
-    std::vector<int> npts { 32, 32, 192 };
-    // std::vector<int> npts { 64, 64, 384 };
-    // std::vector<int> npts { 128, 128, 768 };
+    std::vector<int> npts { n_cell, n_cell, 6 * n_cell };
     amrex::Box domain0(amrex::IntVect { AMREX_D_DECL(0, 0, 0) },
         amrex::IntVect { AMREX_D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1) });
     geom.define(domain0);
@@ -278,12 +273,12 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
     amrex::MultiFab pressure;
     amrex::MultiFab absc;
 
-    std::cout << "initialize data ... \n";
+    // std::cout << "initialize data ... \n";
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, rad_src, acoef,
         bcoef, robin_a, robin_b, robin_f, y_co2, y_h2o, y_co, soot_fv_rad,
         temperature, pressure, absc);
 
-    std::cout << "construct the PDE ... \n";
+    // std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
         amrex::LinOpBCType::Neumann) };
@@ -293,7 +288,7 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
 
     PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
+    // std::cout << "solve the PDE ... \n";
     rte.solve();
 
     // calculate radiative heat source
@@ -307,8 +302,8 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
 
         auto radfab = rad_src.array(mfi);
 
-        amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(
+            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 radfab(i, j, k)
                     = acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
             });
@@ -317,7 +312,7 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
     // plot results
     if (write)
     {
-        std::cout << "write the results ... \n";
+        // std::cout << "write the results ... \n";
         amrex::MultiFab plotmf(grids, dmap, 10, 0);
         amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
         amrex::MultiFab::Copy(plotmf, rhs, 0, 1, 1, 0);

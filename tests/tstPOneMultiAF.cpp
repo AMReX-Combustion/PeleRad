@@ -31,7 +31,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
-                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
+                                * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
     amrex::Real expTz = std::exp(-((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z))
                                  * ((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z)));
 
@@ -163,9 +163,8 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& P         = pressure[ilev].array(mfi);
             auto const& kappa     = absc[ilev].array(mfi);
 
-            amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-                {
+            amrex::ParallelFor(
+                bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                     initGasField(i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx,
                         prob_lo, prob_hi);
                     getRadPropGas(i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2,
@@ -173,9 +172,10 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
                 });
 
             // if soot exists
-            amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-                { getRadPropSoot(i, j, k, fv, T, kappa, kpsoot); });
+            amrex::ParallelFor(
+                bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                    getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
+                });
 
             auto const& rhsfab = rhs[ilev].array(mfi);
             auto const& acfab  = acoef[ilev].array(mfi);
@@ -183,15 +183,14 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rafab  = robin_a[ilev].array(mfi);
             auto const& rbfab  = robin_b[ilev].array(mfi);
             auto const& rffab  = robin_f[ilev].array(mfi);
-            amrex::ParallelFor(gbx,
-                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+            amrex::ParallelFor(
+                gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                     actual_init_coefs(
                         i, j, k, rhsfab, acfab, bcfab, dlo, dhi, bx, kappa, T);
                 });
 
-            amrex::ParallelFor(gbx,
-                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-                {
+            amrex::ParallelFor(
+                gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                     actual_init_bc_coefs(i, j, k, acfab, bcfab, rafab, rbfab,
                         rffab, dlo, dhi, T);
                 });
@@ -231,7 +230,7 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 
-    std::vector<int> npts { 32, 32, 192 };
+    std::vector<int> npts { n_cell, n_cell, 6 * n_cell };
     amrex::Box domain0(amrex::IntVect { AMREX_D_DECL(0, 0, 0) },
         amrex::IntVect { AMREX_D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1) });
 

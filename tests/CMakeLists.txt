@@ -29,7 +29,7 @@ add_executable(PeleRad_POneSingle.exe tstPOneSingle.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingle.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
 target_link_libraries(PeleRad_POneSingle.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingle.exe PRIVATE BOOST_TEST_DYN_LINK)
-add_test(NAME PeleRad_POneSingle_Test COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneSingle.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingle" )
+add_test(NAME PeleRad_POneSingle_Test COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneSingle.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingle")
 
 add_executable(PeleRad_POneMulti.exe tstPOneMulti.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneMulti.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)

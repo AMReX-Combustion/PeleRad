@@ -116,9 +116,8 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rafab     = robin_a.array(mfi);
         auto const& rbfab     = robin_b.array(mfi);
         auto const& rffab     = robin_f.array(mfi);
-        amrex::ParallelFor(gbx,
-            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
-            {
+        amrex::ParallelFor(
+            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
                     rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
             });
@@ -202,10 +201,11 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     amrex::MultiFab robin_b;
     amrex::MultiFab robin_f;
 
-    std::cout << "initialize data ... \n";
+    // std::cout << "initialize data ... \n";
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, exact_solution,
         acoef, bcoef, robin_a, robin_b, robin_f);
-    std::cout << "construct the PDE ... \n";
+
+    // std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
         amrex::LinOpBCType::Neumann) };
@@ -214,7 +214,8 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         amrex::LinOpBCType::Neumann) };
     PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
+
+    // std::cout << "solve the PDE ... \n";
     rte.solve();
 
     auto eps = check_norm(solution, exact_solution);
@@ -238,5 +239,5 @@ BOOST_AUTO_TEST_CASE(p1_robin)
             { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
     }
 
-    BOOST_TEST(eps < 1e-1);
+    BOOST_TEST(eps < 1e-3);
 }
