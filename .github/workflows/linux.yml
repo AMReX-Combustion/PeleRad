@@ -22,8 +22,8 @@ jobs:
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
+        sudo apt install libboost1.75
+        sudo apt install libboost1.75-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
