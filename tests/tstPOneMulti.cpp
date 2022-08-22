@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     else
     {
         std::cout << "level by level solve ... \n";
-        PeleRad::POneMultiLevbyLev rte(mlmgpp, geom, grids, dmap, solution, rhs,
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap, solution, rhs,
             acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
         rte.solve();
     }

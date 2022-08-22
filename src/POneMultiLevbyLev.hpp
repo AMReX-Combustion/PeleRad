@@ -46,6 +46,7 @@ public:
 
     // constructor
     POneMultiLevbyLev(MLMGParam const& mlmgpp,
+        int const ref_ratio,
         amrex::Vector<amrex::Geometry> const& geom,
         amrex::Vector<amrex::BoxArray> const& grids,
         amrex::Vector<amrex::DistributionMapping> const& dmap,
@@ -102,7 +103,9 @@ public:
             mlabeclev.setMaxOrder(linop_maxorder);
 
             if (ilev > 0)
-            { mlabeclev.setCoarseFineBC(&solution_[ilev - 1], 2); }
+            {
+                mlabeclev.setCoarseFineBC(&solution_[ilev - 1], ref_ratio);
+            }
 
             auto const max_iter       = mlmgpp_.max_iter_;
             auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;

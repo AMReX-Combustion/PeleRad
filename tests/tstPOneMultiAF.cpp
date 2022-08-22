@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     }
     else
     {
-        PeleRad::POneMultiLevbyLev rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
         rte.solve();
     }
