@@ -6,6 +6,8 @@
 
 #include <AMReX_PlotFileUtil.H>
 #include <POneMulti.hpp>
+#include <POneMultiLevbyLev.hpp>
+
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     amrex::Array4<amrex::Real> const& y_co2,
     amrex::Array4<amrex::Real> const& y_h2o,
@@ -304,6 +306,7 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     int const n_cell    = amrpp.n_cell_;
     int const nlevels   = amrpp.max_level_ + 1;
     int const ref_ratio = amrpp.ref_ratio_;
+    int const composite_solve = mlmgpp.composite_solve_;
 
     amrex::Vector<amrex::Geometry> geom;
     amrex::Vector<amrex::BoxArray> grids;
@@ -338,10 +341,19 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
         amrex::LinOpBCType::Neumann) };
-    PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+
+    if(composite_solve)
+    {
+        PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
-    rte.solve();
+        rte.solve();
+    }
+    else
+    {
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        rte.solve();
+    }
 
     // plot results
     if (write)

@@ -4,6 +4,7 @@
 
 #include <AMReX_PlotFileUtil.H>
 #include <POneMulti.hpp>
+#include <POneMultiLevbyLev.hpp>
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Array4<amrex::Real> const& rhs,
@@ -234,9 +235,10 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write    = false;
-    int const nlevels   = amrpp.max_level_ + 1;
-    int const ref_ratio = amrpp.ref_ratio_;
+    bool const write          = false;
+    int const nlevels         = amrpp.max_level_ + 1;
+    int const ref_ratio       = amrpp.ref_ratio_;
+    int const composite_solve = mlmgpp.composite_solve_;
 
     amrex::Vector<amrex::Geometry> geom;
     amrex::Vector<amrex::BoxArray> grids;
@@ -262,10 +264,21 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
         amrex::LinOpBCType::Neumann) };
-    PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
-        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    //    std::cout << "solve the PDE ... \n";
-    rte.solve();
+    if (composite_solve)
+    {
+
+        std::cout << "composite solve ... \n";
+        PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+            bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        rte.solve();
+    }
+    else
+    {
+        std::cout << "level by level solve ... \n";
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, geom, grids, dmap, solution, rhs,
+            acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        rte.solve();
+    }
 
     double eps     = 0.0;
     double eps_max = 0.0;

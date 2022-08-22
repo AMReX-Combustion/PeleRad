@@ -3,9 +3,10 @@ max_level = 2
 ref_ratio = 2
 n_cell = 64
 max_grid_size = 32
-plot_file_name = "pltRobinMulti"
+plot_file_name = "pltRobinMultiComp"
 
 #mlmg
+composite_solve = 1
 use_hypre = 0
 verbose = 0
 bottom_verbose = 0
