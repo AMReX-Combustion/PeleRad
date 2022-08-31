@@ -6,6 +6,7 @@
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
 #include <POneMulti.hpp>
+#include <POneMultiLevbyLev.hpp>
 #include <PlanckMean.hpp>
 #include <SpectralModels.hpp>
 
@@ -17,6 +18,8 @@ class Radiation
 private:
     //    AMRParam amrpp_;
     MLMGParam mlmgpp_;
+
+    int ref_ratio_;
 
     PlanckMean radprop;
 
@@ -36,15 +39,24 @@ private:
 
     RadComps rc_;
 
+    bool composite_solve_;
+
     std::unique_ptr<POneMulti> rte_;
+
+    std::unique_ptr<POneMultiLevbyLev> rtelevbylev_;
 
 public:
     AMREX_GPU_HOST
     Radiation(amrex::Vector<amrex::Geometry> const& geom,
         amrex::Vector<amrex::BoxArray> const& grids,
         amrex::Vector<amrex::DistributionMapping> const& dmap, RadComps rc,
-        amrex::ParmParse const& mlmgpp)
-        : geom_(geom), grids_(grids), dmap_(dmap), rc_(rc), mlmgpp_(mlmgpp)
+        amrex::ParmParse const& mlmgpp, int const& ref_ratio)
+        : geom_(geom),
+          grids_(grids),
+          dmap_(dmap),
+          rc_(rc),
+          mlmgpp_(mlmgpp),
+          ref_ratio_(ref_ratio)
     {
         rc_.checkIndices();
 
@@ -71,9 +83,20 @@ public:
             amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
             amrex::LinOpBCType::Periodic) };
 
-        rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
-            solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
-            robin_f_);
+        composite_solve_ = mlmgpp_.composite_solve_;
+
+        if (composite_solve_)
+        {
+            rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
+                solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
+                robin_f_);
+        }
+        else
+        {
+            rtelevbylev_ = std::make_unique<POneMultiLevbyLev>(mlmgpp_,
+                ref_ratio_, geom_, grids_, dmap_, solution_, rhs_, acoef_,
+                bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
+        }
     }
 
     AMREX_GPU_HOST
@@ -154,17 +177,19 @@ public:
                                           4.0);*/ // cgs
                     alphafab(i, j, k) = ka;
 
-/*                    if (i == dlo.x) betafab(i - 1, j, k) = betafab(dlo.x, j, k);
-                    if (i == dhi.x) betafab(i + 1, j, k) = betafab(dhi.x, j, k);
-                    if (j == dlo.y) betafab(i, j - 1, k) = betafab(i, dlo.y, k);
-                    if (j == dhi.y) betafab(i, j + 1, k) = betafab(i, dhi.y, k);
-                    if (k == dlo.z) betafab(i, j, k - 1) = betafab(i, j, dlo.z);
-                    if (k == dhi.z) betafab(i, j, k + 1) = betafab(i, j, dhi.z);*/
+                    /*                    if (i == dlo.x) betafab(i - 1, j, k) =
+                       betafab(dlo.x, j, k); if (i == dhi.x) betafab(i + 1, j,
+                       k) = betafab(dhi.x, j, k); if (j == dlo.y) betafab(i, j -
+                       1, k) = betafab(i, dlo.y, k); if (j == dhi.y) betafab(i,
+                       j + 1, k) = betafab(i, dhi.y, k); if (k == dlo.z)
+                       betafab(i, j, k - 1) = betafab(i, j, dlo.z); if (k ==
+                       dhi.z) betafab(i, j, k + 1) = betafab(i, j, dhi.z);*/
                 }
-//            });
-//
-//        amrex::ParallelFor(
-//            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                //            });
+                //
+                //        amrex::ParallelFor(
+                //            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k)
+                //            noexcept {
                 // Robin BC
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
@@ -223,7 +248,15 @@ public:
                     solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_,
            robin_b_, robin_f_);
         */
-        rte_->solve();
+
+        if (composite_solve_)
+        {
+            rte_->solve();
+        }
+        else
+        {
+            rtelevbylev_->solve();
+        }
     }
 
     void calcRadSource(amrex::MFIter const& mfi,
