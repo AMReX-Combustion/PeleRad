@@ -6,6 +6,8 @@
 
 #include <AMReX_PlotFileUtil.H>
 #include <POneMulti.hpp>
+#include <POneMultiLevbyLev.hpp>
+
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     amrex::Array4<amrex::Real> const& y_co2,
     amrex::Array4<amrex::Real> const& y_h2o,
@@ -17,14 +19,18 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& plo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& phi)
 {
-    amrex::Real xc = (phi[0] + plo[0]) * 0.5;
-    amrex::Real yc = (phi[1] + plo[1]) * 0.5;
+    amrex::Real coef = 100;
+    amrex::Real xc   = (phi[0] + plo[0]) * 0.5;
+    amrex::Real yc   = (phi[1] + plo[1]) * 0.5;
 
     amrex::Real x = plo[0] + (i + 0.5) * dx[0];
     amrex::Real y = plo[1] + (j + 0.5) * dx[1];
     amrex::Real z = plo[2] + (k + 0.5) * dx[2];
 
     amrex::Real r = std::sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
+
+    z /= coef;
+    r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
@@ -33,7 +39,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0;
+    pressure(i, j, k) = 1.0e6; // cgs
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
@@ -59,77 +65,48 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& alpha,
+    amrex::Array4<amrex::Real> const& beta, amrex::Dim3 const& dlo,
+    amrex::Dim3 const& dhi, amrex::Box const& vbx,
+    amrex::Array4<amrex::Real> const& absc, amrex::Array4<amrex::Real> const& T)
+{
+    beta(i, j, k) = 100;
+    if (vbx.contains(i, j, k))
+    {
+        double ka      = std::max(0.01, absc(i, j, k));
+        beta(i, j, k)  = 1.0 / ka;
+        rhs(i, j, k)   = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0);
+        alpha(i, j, k) = ka;
+    }
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
+    int k, amrex::Array4<amrex::Real> const& alpha,
     amrex::Array4<amrex::Real> const& beta,
     amrex::Array4<amrex::Real> const& robin_a,
     amrex::Array4<amrex::Real> const& robin_b,
-    amrex::Array4<amrex::Real> const& robin_f,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_lo,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& prob_hi,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
-    amrex::Dim3 const& dlo, amrex::Dim3 const& dhi, amrex::Box const& vbx,
-    amrex::Array4<amrex::Real> const& absc, amrex::Array4<amrex::Real> const& T)
+    amrex::Array4<amrex::Real> const& robin_f, amrex::Dim3 const& dlo,
+    amrex::Dim3 const& dhi, amrex::Array4<amrex::Real> const& T)
 {
-    amrex::Real x = prob_lo[0] + dx[0] * (i + 0.5);
-    amrex::Real y = prob_lo[1] + dx[1] * (j + 0.5);
-    amrex::Real z = prob_lo[2] + dx[2] * (k + 0.5);
-
-    x = amrex::min(amrex::max(x, prob_lo[0]), prob_hi[0]);
-    y = amrex::min(amrex::max(y, prob_lo[1]), prob_hi[1]);
-    z = amrex::min(amrex::max(z, prob_lo[2]), prob_hi[2]);
-
-    beta(i, j, k) = 1.0;
-
-    if (vbx.contains(i, j, k))
-    {
-        double ka     = std::max(1.0, absc(i, j, k));
-        beta(i, j, k) = 1.0 / ka;
-
-        rhs(i, j, k)   = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0);
-        alpha(i, j, k) = ka;
-    }
+    if (i < dlo.x) beta(i, j, k) = beta(dlo.x, j, k);
+    if (i > dhi.x) beta(i, j, k) = beta(dhi.x, j, k);
+    if (j < dlo.y) beta(i, j, k) = beta(i, dlo.y, k);
+    if (j > dhi.y) beta(i, j, k) = beta(i, dhi.y, k);
 
     // Robin BC
     bool robin_cell = false;
-    double sign     = 1.0;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x)
-        {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-
-        if (i < dlo.x)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
+        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y)
-        {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-        if (j < dlo.y)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
+        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
     }
-
-    /*else if (robin_dir == 2 && i >= dlo.x && i <= dhi.x && j >= dlo.y
-             && j <= dhi.y)
-    {
-        robin_cell = (k > dhi.z) || (k < dlo.z);
-    }*/
 
     if (robin_cell)
     {
-        robin_a(i, j, k) = beta(i, j, k);
-        robin_b(i, j, k) = -4.0 / 3.0 * sign;
-
+        robin_a(i, j, k) = -1.0 / beta(i, j, k);
+        robin_b(i, j, k) = -2.0 / 3.0;
         robin_f(i, j, k) = 0.0;
     }
 }
@@ -210,12 +187,16 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rffab  = robin_f[ilev].array(mfi);
             amrex::ParallelFor(
                 gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                    actual_init_coefs(i, j, k, rhsfab, acfab, bcfab, rafab,
-                        rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx, kappa,
-                        T);
+                    actual_init_coefs(
+                        i, j, k, rhsfab, acfab, bcfab, dlo, dhi, bx, kappa, T);
+                });
+
+            amrex::ParallelFor(
+                gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                    actual_init_bc_coefs(i, j, k, acfab, bcfab, rafab, rbfab,
+                        rffab, dlo, dhi, T);
                 });
         }
-
         solution[ilev].setVal(0.0, 0, 1, amrex::IntVect(0));
     }
 }
@@ -247,11 +228,11 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
     dmap.resize(nlevels);
 
     amrex::RealBox rb(
-        { AMREX_D_DECL(0.0, 0.0, 0.0) }, { AMREX_D_DECL(0.125, 0.125, 0.75) });
+        { AMREX_D_DECL(0.0, 0.0, 0.0) }, { AMREX_D_DECL(12.5, 12.5, 75) });
     amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(0, 0, 0) };
     amrex::Geometry::Setup(&rb, 0, is_periodic.data());
 
-    std::vector<int> npts { 32, 32, 192 };
+    std::vector<int> npts { n_cell, n_cell, 6 * n_cell };
     amrex::Box domain0(amrex::IntVect { AMREX_D_DECL(0, 0, 0) },
         amrex::IntVect { AMREX_D_DECL(npts[0] - 1, npts[1] - 1, npts[2] - 1) });
 
@@ -321,10 +302,10 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write    = false;
-    int const n_cell    = amrpp.n_cell_;
-    int const nlevels   = amrpp.max_level_ + 1;
-    int const ref_ratio = amrpp.ref_ratio_;
+    bool const write          = false;
+    int const nlevels         = amrpp.max_level_ + 1;
+    int const ref_ratio       = amrpp.ref_ratio_;
+    int const composite_solve = mlmgpp.composite_solve_;
 
     amrex::Vector<amrex::Geometry> geom;
     amrex::Vector<amrex::BoxArray> grids;
@@ -359,10 +340,19 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
         amrex::LinOpBCType::Neumann) };
-    PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
-        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
-    rte.solve();
+
+    if (composite_solve)
+    {
+        PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
+            bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        rte.solve();
+    }
+    else
+    {
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap,
+            solution, rhs, acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        rte.solve();
+    }
 
     // plot results
     if (write)
@@ -388,8 +378,8 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
         auto const plot_file_name = amrpp.plot_file_name_;
         amrex::WriteMultiLevelPlotfile(plot_file_name, nlevels,
             amrex::GetVecOfConstPtrs(plotmf),
-            { "solution", "rhs", "acoef", "bcoef", "y_co2", "y_h2o", "y_co",
-                "soot_fv_rad", "temperature" },
+            { "solution", "rhs", "acoef", "bcoef", "Y_co2", "Y_h2o", "Y_co",
+                "Soot_fv_rad", "Temperature" },
             geom, 0.0, amrex::Vector<int>(nlevels, 0),
             amrex::Vector<amrex::IntVect>(
                 nlevels, amrex::IntVect { ref_ratio }));

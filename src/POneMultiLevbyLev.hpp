@@ -1,5 +1,5 @@
-#ifndef PONEMULTI_HPP
-#define PONEMULTI_HPP
+#ifndef PONEMULTILEVBYLEV_HPP
+#define PONEMULTILEVBYLEV_HPP
 
 #include <AMRParam.hpp>
 #include <AMReX_FArrayBox.H>
@@ -12,10 +12,12 @@
 namespace PeleRad
 {
 
-class POneMulti
+class POneMultiLevbyLev
 {
 private:
     MLMGParam mlmgpp_;
+
+    int ref_ratio_;
 
 public:
     amrex::Vector<amrex::Geometry> const& geom_;
@@ -37,15 +39,15 @@ public:
     amrex::Real const ascalar_ = 1.0;
     amrex::Real const bscalar_ = 1.0 / 3.0;
 
-    std::unique_ptr<amrex::MLABecLaplacian> mlabec_;
+    amrex::Vector<std::unique_ptr<amrex::MLABecLaplacian>> mlabec_;
     // amrex::MLABecLaplacian mlabec_;
 
-    std::unique_ptr<amrex::MLMG> mlmg_;
+    amrex::Vector<std::unique_ptr<amrex::MLMG>> mlmg_;
 
-    POneMulti() = delete;
+    POneMultiLevbyLev() = delete;
 
     // constructor
-    POneMulti(MLMGParam const& mlmgpp,
+    POneMultiLevbyLev(MLMGParam const& mlmgpp, int const ref_ratio,
         amrex::Vector<amrex::Geometry> const& geom,
         amrex::Vector<amrex::BoxArray> const& grids,
         amrex::Vector<amrex::DistributionMapping> const& dmap,
@@ -59,6 +61,7 @@ public:
         amrex::Vector<amrex::MultiFab> const& robin_b,
         amrex::Vector<amrex::MultiFab> const& robin_f)
         : mlmgpp_(mlmgpp),
+          ref_ratio_(ref_ratio),
           geom_(geom),
           grids_(grids),
           dmap_(dmap),
@@ -76,55 +79,78 @@ public:
         auto const agglomeration        = mlmgpp_.agglomeration_;
         auto const consolidation        = mlmgpp_.consolidation_;
         auto const linop_maxorder       = mlmgpp_.linop_maxorder_;
+        auto const max_iter             = mlmgpp_.max_iter_;
+        auto const max_fmg_iter         = mlmgpp_.max_fmg_iter_;
+        auto const verbose              = mlmgpp_.verbose_;
+        auto const bottom_verbose       = mlmgpp_.bottom_verbose_;
+        auto const use_hypre            = mlmgpp_.use_hypre_;
 
         amrex::LPInfo info;
         info.setAgglomeration(agglomeration);
         info.setConsolidation(consolidation);
         info.setMaxCoarseningLevel(max_coarsening_level);
 
-        //      mlabec_.define(geom_, grids_, dmap_, info);
+        auto const nlevels = geom_.size();
 
-        mlabec_ = std::make_unique<amrex::MLABecLaplacian>(
-            geom_, grids_, dmap_, info);
+        for (int ilev = 0; ilev < nlevels; ++ilev)
+        {
+            auto mlabeclev = std::make_unique<amrex::MLABecLaplacian>();
+            mlabeclev->define(
+                { geom_[ilev] }, { grids_[ilev] }, { dmap_[ilev] }, info);
 
-        mlabec_->setDomainBC(lobc_, hibc_);
-        mlabec_->setScalars(ascalar_, bscalar_);
-        mlabec_->setMaxOrder(linop_maxorder);
+            mlabeclev->setDomainBC(lobc_, hibc_);
+            mlabeclev->setScalars(ascalar_, bscalar_);
+            mlabeclev->setMaxOrder(linop_maxorder);
 
-        auto const max_iter       = mlmgpp_.max_iter_;
-        auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
-        auto const verbose        = mlmgpp_.verbose_;
-        auto const bottom_verbose = mlmgpp_.bottom_verbose_;
-        auto const use_hypre      = mlmgpp_.use_hypre_;
+            auto mlmglev = std::make_unique<amrex::MLMG>(*mlabeclev);
 
-        mlmg_ = std::make_unique<amrex::MLMG>(*mlabec_);
-        mlmg_->setMaxIter(max_iter);
-        mlmg_->setMaxFmgIter(max_fmg_iter);
-        mlmg_->setVerbose(verbose);
-        mlmg_->setBottomVerbose(bottom_verbose);
+            mlmglev->setMaxIter(max_iter);
+            mlmglev->setMaxFmgIter(max_fmg_iter);
+            mlmglev->setVerbose(verbose);
+            mlmglev->setBottomVerbose(bottom_verbose);
 
-        if (use_hypre) mlmg_->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+            // still trying different combinations for real applications
+            mlmglev->setPreSmooth(2);
+            mlmglev->setPostSmooth(2);
+
+            mlmglev->setBottomSolver(amrex::MLMG::BottomSolver::bicgstab);
+
+            if (use_hypre)
+                mlmglev->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+
+            mlabec_.push_back(std::move(mlabeclev));
+            mlmg_.push_back(std::move(mlmglev));
+        }
     }
 
     void solve()
     {
-        auto const nlevels = geom_.size();
-
-        //    amrex::MLABecLaplacian mlabec_(geom_, grids_, dmap_, info);
+        int const solver_level = 0;
+        auto const nlevels     = geom_.size();
+        auto const tol_rel     = mlmgpp_.reltol_;
+        auto const tol_abs     = mlmgpp_.abstol_;
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
             auto const& geom    = geom_[ilev];
             auto& solution      = solution_[ilev];
+            auto const& rhs     = rhs_[ilev];
             auto const& acoef   = acoef_[ilev];
             auto const& bcoef   = bcoef_[ilev];
             auto const& robin_a = robin_a_[ilev];
             auto const& robin_b = robin_b_[ilev];
             auto const& robin_f = robin_f_[ilev];
 
-            mlabec_->setLevelBC(ilev, &solution, &robin_a, &robin_b, &robin_f);
+            if (ilev > 0)
+            {
+                mlabec_[ilev]->setCoarseFineBC(
+                    &solution_[ilev - 1], ref_ratio_);
+            }
 
-            mlabec_->setACoeffs(ilev, acoef);
+            mlabec_[ilev]->setLevelBC(
+                solver_level, &solution, &robin_a, &robin_b, &robin_f);
+
+            mlabec_[ilev]->setACoeffs(solver_level, acoef);
 
             amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> face_bcoef;
             for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
@@ -133,35 +159,17 @@ public:
                     bcoef.boxArray(), amrex::IntVect::TheDimensionVector(idim));
                 face_bcoef[idim].define(ba, bcoef.DistributionMap(), 1, 0);
             }
+
             amrex::average_cellcenter_to_face(
                 GetArrOfPtrs(face_bcoef), bcoef, geom);
-            mlabec_->setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoef));
+
+            mlabec_[ilev]->setBCoeffs(
+                solver_level, amrex::GetArrOfConstPtrs(face_bcoef));
+
+            mlmg_[ilev]->solve({ &solution }, { &rhs }, tol_rel, tol_abs);
         }
-
-        /*
-                amrex::MLMG mlmg_(*mlabec_);
-
-                auto const max_iter       = mlmgpp_.max_iter_;
-                auto const max_fmg_iter   = mlmgpp_.max_fmg_iter_;
-                auto const verbose        = mlmgpp_.verbose_;
-                auto const bottom_verbose = mlmgpp_.bottom_verbose_;
-                auto const use_hypre      = mlmgpp_.use_hypre_;
-                mlmg_.setMaxIter(max_iter);
-                mlmg_.setMaxFmgIter(max_fmg_iter);
-                mlmg_.setVerbose(verbose);
-                mlmg_.setBottomVerbose(bottom_verbose);
-
-                if (use_hypre)
-           mlmg_.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
-        */
-        auto const tol_rel = mlmgpp_.reltol_;
-        auto const tol_abs = mlmgpp_.abstol_;
-
-        mlmg_->solve(
-            GetVecOfPtrs(solution_), GetVecOfConstPtrs(rhs_), tol_rel, tol_abs);
     }
 };
 
 }
-
 #endif

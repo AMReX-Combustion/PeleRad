@@ -1,3 +1,6 @@
+#ifndef PONESINGLE_HPP
+#define PONESINGLE_HPP
+
 #include <AMRParam.hpp>
 #include <AMReX_FArrayBox.H>
 #include <AMReX_MLABecLaplacian.H>
@@ -8,6 +11,7 @@
 
 namespace PeleRad
 {
+
 class POneSingle
 {
 private:
@@ -33,12 +37,13 @@ public:
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
 
+    POneSingle() = default;
+
     // constructor
-    POneSingle(MLMGParam const& mlmgpp,
-        amrex::Geometry const& geom, amrex::BoxArray const& grids,
-        amrex::DistributionMapping const& dmap, amrex::MultiFab& solution,
-        amrex::MultiFab const& rhs, amrex::MultiFab const& acoef,
-        amrex::MultiFab const& bcoef,
+    POneSingle(MLMGParam const& mlmgpp, amrex::Geometry const& geom,
+        amrex::BoxArray const& grids, amrex::DistributionMapping const& dmap,
+        amrex::MultiFab& solution, amrex::MultiFab const& rhs,
+        amrex::MultiFab const& acoef, amrex::MultiFab const& bcoef,
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc,
         amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc,
         amrex::MultiFab const& robin_a, amrex::MultiFab const& robin_b,
@@ -55,7 +60,9 @@ public:
           hibc_(hibc),
           robin_a_(robin_a),
           robin_b_(robin_b),
-          robin_f_(robin_f) {};
+          robin_f_(robin_f) {
+              // std::cout << "linear solver constructor called" << std::endl;
+          };
 
     void solve()
     {
@@ -92,14 +99,17 @@ public:
         mlabec.setACoeffs(0, acoef);
 
         amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> face_bcoef;
+
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
         {
             const amrex::BoxArray& ba = amrex::convert(
                 bcoef.boxArray(), amrex::IntVect::TheDimensionVector(idim));
             face_bcoef[idim].define(ba, bcoef.DistributionMap(), 1, 0);
         }
+
         amrex::average_cellcenter_to_face(
             GetArrOfPtrs(face_bcoef), bcoef, geom);
+
         mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(face_bcoef));
 
         amrex::MLMG mlmg(mlabec);
@@ -112,5 +122,29 @@ public:
 
         mlmg.solve({ &solution }, { &rhs }, tol_rel, tol_abs);
     }
+
+    void calcRadSource(amrex::MultiFab& rad_src)
+    {
+        // std::cout << "calcRadSource is called" << std::endl;
+        for (amrex::MFIter mfi(rad_src); mfi.isValid(); ++mfi)
+        {
+            amrex::Box const& bx = mfi.validbox();
+
+            auto const& rhsfab = rhs_.array(mfi);
+            auto const& solfab = solution_.array(mfi);
+            auto const& acfab  = acoef_.array(mfi);
+
+            auto radfab = rad_src.array(mfi);
+
+            amrex::ParallelFor(
+                bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+                    radfab(i, j, k, 4)
+                        = acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
+                });
+        }
+    }
 };
+
 }
+
+#endif

@@ -8,13 +8,12 @@ add_dependencies(PeleRad record_hash)
 add_library(PeleRad::PeleRad ALIAS PeleRad)
 
 option(PELERAD_ENABLE_MPI "Enable MPI" OFF)
-
 if(PELERAD_ENABLE_MPI)
   find_package(MPI REQUIRED)
   target_link_libraries(PeleRad INTERFACE MPI::MPI_CXX)
 endif()
 
-find_package(Boost 1.67.0 REQUIRED COMPONENTS filesystem system iostreams program_options unit_test_framework)
+find_package(Boost 1.74.0 REQUIRED COMPONENTS filesystem system iostreams program_options unit_test_framework)
 
 include(${CMAKE_SOURCE_DIR}/cmake/SetAmrexOptions.cmake)
 
@@ -44,6 +43,30 @@ install(EXPORT PeleRadTargets
   NAMESPACE PeleRad::
   DESTINATION lib/cmake/PeleRad
 )
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/PeleRad_Config.hpp.in 
+               ${CMAKE_CURRENT_BINARY_DIR}/include/PeleRad_Config.hpp)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PeleRadSettings.cmake.in 
+               ${CMAKE_CURRENT_BINARY_DIR}/PeleRadSettings.cmake
+              @ONLY)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(cmake/PeleRadConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/PeleRadConfig.cmake
+  INSTALL_DESTINATION lib/cmake/PeleRad
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/PeleRadConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/PeleRadSettings.cmake
+  DESTINATION lib/cmake/PeleRad
+)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
