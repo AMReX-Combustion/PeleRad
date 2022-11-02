@@ -3,6 +3,7 @@
 
 //#include <AMRParam.hpp>
 //#include <MLMGParam.hpp>
+#include <AMReX_ParallelDescriptor.H>
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
 #include <POneMulti.hpp>
@@ -58,7 +59,7 @@ public:
           mlmgpp_(mlmgpp),
           ref_ratio_(ref_ratio)
     {
-        rc_.checkIndices();
+        if (amrex::ParallelDescriptor::IOProcessor()) rc_.checkIndices();
 
         auto const nlevels = geom.size();
 
@@ -71,8 +72,6 @@ public:
         robin_f_.resize(nlevels);
         absc_.resize(nlevels);
 
-        std::cout << "Initialize variables in the radiation module..."
-                  << "\n";
         initVars(grids, dmap, nlevels);
         loadSpecModel();
 
@@ -107,7 +106,8 @@ public:
 
         radprop.load(data_path);
 
-        std::cout << "The radiative property database is loaded" << std::endl;
+        amrex::Print() << "The radiative property database is loaded"
+                       << "\n";
     }
 
     void readRadParams(amrex::ParmParse const& pp) { }
@@ -148,7 +148,6 @@ public:
             bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 RadProp::getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
-                kappa(i, j, k) *= 10.0;
             });
 
 #ifdef PELELM_USE_SOOT
@@ -161,7 +160,8 @@ public:
 
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                betafab(i, j, k) = 1000.0;
+                // betafab(i, j, k) = 100.0; // for debug
+                betafab(i, j, k) = 1.0;
 
                 if (bx.contains(i, j, k))
                 {
@@ -185,11 +185,7 @@ public:
                        betafab(i, j, k - 1) = betafab(i, j, dlo.z); if (k ==
                        dhi.z) betafab(i, j, k + 1) = betafab(i, j, dhi.z);*/
                 }
-                //            });
-                //
-                //        amrex::ParallelFor(
-                //            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k)
-                //            noexcept {
+
                 // Robin BC
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
@@ -236,23 +232,14 @@ public:
 
     void evaluateRad()
     {
-        /*
-                amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc {
-           AMREX_D_DECL( amrex::LinOpBCType::Robin,
-           amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic) };
-                amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc {
-           AMREX_D_DECL( amrex::LinOpBCType::Neumann,
-           amrex::LinOpBCType::Periodic, amrex::LinOpBCType::Periodic) };
-
-                POneMulti rte_(mlmgpp_, geom_, grids_, dmap_,
-                    solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_,
-           robin_b_, robin_f_);
-        */
-
-        if (composite_solve_)
+        auto const nlevels = geom_.size();
+        for (int ilev = 0; ilev < nlevels; ++ilev)
         {
-            rte_->solve();
+            solution_[ilev].FillBoundary(geom_[ilev].periodicity());
+            bcoef_[ilev].FillBoundary(geom_[ilev].periodicity());
         }
+
+        if (composite_solve_) { rte_->solve(); }
         else
         {
             rtelevbylev_->solve();

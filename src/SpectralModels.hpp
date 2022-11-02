@@ -68,7 +68,10 @@ namespace RadProp
                         + yco(i, j, k) * kp_co;
 
         // absc(i, j, k) *= pressure(i, j, k) / 1.0e5 * 100.0; //si, in m-1
-        absc(i, j, k) *= pressure(i, j, k) / 1.0e6; // cgs, in cm-1
+        absc(i, j, k)
+            *= pressure(i, j, k)
+               / 1.0e5; // cgs, in cm-1; if P is in bar(PeleLM), no correction
+                        // is needed, otherwise the absc needs to be corrected.
     }
 
     AMREX_GPU_HOST_DEVICE

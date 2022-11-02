@@ -67,18 +67,13 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Dim3 const& dhi, amrex::Box const& vbx,
     amrex::Array4<amrex::Real> const& absc, amrex::Array4<amrex::Real> const& T)
 {
-    beta(i, j, k) = 100;
+    beta(i, j, k) = 1;
     if (vbx.contains(i, j, k))
     {
-        double ka      = std::max(0.01, absc(i, j, k));
+        double ka      = std::max(0.001, absc(i, j, k));
         beta(i, j, k)  = 1.0 / ka;
         rhs(i, j, k)   = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0);
         alpha(i, j, k) = ka;
-
-        if (i == dlo.x) beta(i - 1, j, k) = beta(dlo.x, j, k);
-        if (i == dhi.x) beta(i + 1, j, k) = beta(dhi.x, j, k);
-        if (j == dlo.y) beta(i, j - 1, k) = beta(i, dlo.y, k);
-        if (j == dhi.y) beta(i, j + 1, k) = beta(i, dhi.y, k);
     }
 }
 
@@ -92,6 +87,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
 {
     // Robin BC
     bool robin_cell = false;
+
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
         if (i > dhi.x || i < dlo.x) { robin_cell = true; }
@@ -331,6 +327,15 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
             { "G", "Emis", "kappa", "bcoef", "RadSrc", "Y_co2", "Y_h2o", "Y_co",
                 "Soot_fv", "Temperature" },
             geom, 0.0, 0);
+
+        // for amrvis
+        /*
+        amrex::writeFabs(solution, "solution");
+        amrex::writeFabs(bcoef, "bcoef");
+        amrex::writeFabs(robin_a, "robin_a");
+        amrex::writeFabs(robin_b, "robin_b");
+        amrex::writeFabs(robin_f, "robin_f");
+        */
     }
     BOOST_TEST(true);
 }

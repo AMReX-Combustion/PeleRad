@@ -3,6 +3,7 @@
 
 //#include <AMRParam.hpp>
 //#include <MLMGParam.hpp>
+#include <AMReX_ParallelDescriptor.H>
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
 #include <POneSingle.hpp>
@@ -44,7 +45,7 @@ public:
         amrex::DistributionMapping const& dmap, RadComps rc)
         : geom_(geom), grids_(grids), dmap_(dmap), rc_(rc)
     {
-        rc_.checkIndices();
+        if (amrex::ParallelDescriptor::IOProcessor()) rc_.checkIndices();
         solution_.define(
             grids_, dmap_, 1, 1); // one ghost cell to store boundary conditions
         rhs_.define(grids_, dmap_, 1, 0);
@@ -69,7 +70,8 @@ public:
 
         radprop.load(data_path);
 
-        std::cout << "The radiative property database is loaded" << std::endl;
+        amrex::Print() << "The radiative property database is loaded"
+                       << "\n";
     }
 
     void readRadParams(amrex::ParmParse const& pp) { }
@@ -109,6 +111,7 @@ public:
             bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 RadProp::getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+                kappa(i, j, k) *= 0.1; // correction for P in cgs
             });
 
 #ifdef PELEC_USE_SOOT
@@ -175,6 +178,10 @@ public:
         // std::cout << "before the rte constructor" << std::endl;
         POneSingle rte(mlmgpp, geom_, grids_, dmap_, solution_, rhs_, acoef_,
             bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
+
+        solution_.FillBoundary(geom_.periodicity());
+        bcoef_.FillBoundary(geom_.periodicity());
+
         rte.solve();
 
         rte.calcRadSource(rad_src);

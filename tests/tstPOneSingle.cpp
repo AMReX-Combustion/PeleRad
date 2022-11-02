@@ -2,6 +2,7 @@
 
 #define BOOST_TEST_MODULE ponerobinsingle
 
+#include <AMReX_MultiFabUtil.H>
 #include <AMReX_PlotFileUtil.H>
 #include <POneSingle.hpp>
 
@@ -47,12 +48,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     }
 
     // Robin BC
-    bool robin_cell = false;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
-
-        if (robin_cell)
+        if (i > dhi.x || i < dlo.x)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
@@ -62,26 +60,20 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
-
-        if (robin_cell)
+        if (j > dhi.y || j < dlo.y)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
 
             double msinsinsin = -std::sin(npioverL * x) * std::sin(npioverL * y)
                                 * std::sin(npioverL * z);
-
             robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                                + robin_b(i, j, k) * npioverL * msinsinsin;
         }
     }
-
     else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
     {
-        if (k > dhi.z || k < dlo.z) { robin_cell = true; }
-
-        if (robin_cell)
+        if (k > dhi.z || k < dlo.z)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
@@ -237,6 +229,15 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         auto const plot_file_name = amrpp.plot_file_name_;
         amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
             { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+
+        // for amrvis
+        /*
+        amrex::writeFabs(solution, "solution");
+        amrex::writeFabs(bcoef, "bcoef");
+        amrex::writeFabs(robin_a, "robin_a");
+        amrex::writeFabs(robin_b, "robin_b");
+        amrex::writeFabs(robin_f, "robin_f");
+        */
     }
 
     BOOST_TEST(eps < 1e-3);

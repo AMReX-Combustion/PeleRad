@@ -48,12 +48,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     }
 
     // Robin BC
-    bool robin_cell = false;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
-
-        if (robin_cell)
+        if (i > dhi.x || i < dlo.x)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
@@ -64,9 +61,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
-
-        if (robin_cell)
+        if (j > dhi.y || j < dlo.y)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
@@ -78,11 +73,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
                                + robin_b(i, j, k) * npioverL * msinsinsin;
         }
     }
-
     else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
     {
-        if (k > dhi.z || k < dlo.z) { robin_cell = true; }
-        if (robin_cell)
+        if (k > dhi.z || k < dlo.z)
         {
             robin_a(i, j, k) = -1.0;
             robin_b(i, j, k) = -2.0 / 3.0;
@@ -275,8 +268,8 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     else
     {
         std::cout << "level by level solve ... \n";
-        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap, solution, rhs,
-            acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap,
+            solution, rhs, acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
         rte.solve();
     }
 
@@ -308,6 +301,16 @@ BOOST_AUTO_TEST_CASE(p1_robin)
                 plotmf[ilev], exact_solution[ilev], 0, 2, 1, 0);
             amrex::MultiFab::Copy(plotmf[ilev], solution[ilev], 0, 3, 1, 0);
             amrex::MultiFab::Subtract(plotmf[ilev], plotmf[ilev], 2, 3, 1, 0);
+
+            // For amrvis
+            /*
+            amrex::writeFabs(solution[ilev],
+            "solution_lev"+std::to_string(ilev)); amrex::writeFabs(bcoef[ilev],
+            "bcoef_lev"+std::to_string(ilev)); amrex::writeFabs(robin_a[ilev],
+            "robin_a_lev"+std::to_string(ilev)); amrex::writeFabs(robin_b[ilev],
+            "robin_b_lev"+std::to_string(ilev)); amrex::writeFabs(robin_f[ilev],
+            "robin_f_lev"+std::to_string(ilev));
+            */
         }
 
         auto const plot_file_name = amrpp.plot_file_name_;

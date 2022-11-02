@@ -76,11 +76,6 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
         beta(i, j, k)  = 1.0 / ka;
         rhs(i, j, k)   = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0);
         alpha(i, j, k) = ka;
-
-        if (i == dlo.x) beta(i - 1, j, k) = beta(dlo.x, j, k);
-        if (i == dhi.x) beta(i + 1, j, k) = beta(dhi.x, j, k);
-        if (j == dlo.y) beta(i, j - 1, k) = beta(i, dlo.y, k);
-        if (j == dhi.y) beta(i, j + 1, k) = beta(i, dhi.y, k);
     }
 }
 
@@ -92,6 +87,11 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
     amrex::Array4<amrex::Real> const& robin_f, amrex::Dim3 const& dlo,
     amrex::Dim3 const& dhi, amrex::Array4<amrex::Real> const& T)
 {
+    if (i < dlo.x) beta(i, j, k) = beta(dlo.x, j, k);
+    if (i > dhi.x) beta(i, j, k) = beta(dhi.x, j, k);
+    if (j < dlo.y) beta(i, j, k) = beta(i, dlo.y, k);
+    if (j > dhi.y) beta(i, j, k) = beta(i, dhi.y, k);
+
     // Robin BC
     bool robin_cell = false;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
@@ -302,10 +302,9 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write    = false;
-    int const n_cell    = amrpp.n_cell_;
-    int const nlevels   = amrpp.max_level_ + 1;
-    int const ref_ratio = amrpp.ref_ratio_;
+    bool const write          = false;
+    int const nlevels         = amrpp.max_level_ + 1;
+    int const ref_ratio       = amrpp.ref_ratio_;
     int const composite_solve = mlmgpp.composite_solve_;
 
     amrex::Vector<amrex::Geometry> geom;
@@ -342,16 +341,16 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
         amrex::LinOpBCType::Neumann) };
 
-    if(composite_solve)
+    if (composite_solve)
     {
         PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
-        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+            bcoef, lobc, hibc, robin_a, robin_b, robin_f);
         rte.solve();
     }
     else
     {
-        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap, solution, rhs, acoef,
-        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap,
+            solution, rhs, acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
         rte.solve();
     }
 

@@ -1,9 +1,10 @@
 #!/bin/bash
 
 cmake \
-      -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
       -DCMAKE_PREFIX_PATH="$BOOST_DIR" \
+      -DCMAKE_CXX_COMPILER=gcc \
       -DPELERAD_DIM=3 \
       -DPELERAD_ENABLE_MPI=OFF \
       -DPELERAD_ENABLE_OPENOMP=OFF \

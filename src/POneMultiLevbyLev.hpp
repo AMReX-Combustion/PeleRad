@@ -75,7 +75,6 @@ public:
           robin_b_(robin_b),
           robin_f_(robin_f)
     {
-
         auto const max_coarsening_level = mlmgpp_.max_coarsening_level_;
         auto const agglomeration        = mlmgpp_.agglomeration_;
         auto const consolidation        = mlmgpp_.consolidation_;
@@ -110,6 +109,12 @@ public:
             mlmglev->setVerbose(verbose);
             mlmglev->setBottomVerbose(bottom_verbose);
 
+            // still trying different combinations for real applications
+            mlmglev->setPreSmooth(2);
+            mlmglev->setPostSmooth(2);
+
+            mlmglev->setBottomSolver(amrex::MLMG::BottomSolver::bicgstab);
+
             if (use_hypre)
                 mlmglev->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
 
@@ -129,6 +134,7 @@ public:
         {
             auto const& geom    = geom_[ilev];
             auto& solution      = solution_[ilev];
+            auto const& rhs     = rhs_[ilev];
             auto const& acoef   = acoef_[ilev];
             auto const& bcoef   = bcoef_[ilev];
             auto const& robin_a = robin_a_[ilev];
@@ -160,8 +166,7 @@ public:
             mlabec_[ilev]->setBCoeffs(
                 solver_level, amrex::GetArrOfConstPtrs(face_bcoef));
 
-            mlmg_[ilev]->solve(
-                { &solution }, { &rhs_[ilev] }, tol_rel, tol_abs);
+            mlmg_[ilev]->solve({ &solution }, { &rhs }, tol_rel, tol_abs);
         }
     }
 };
