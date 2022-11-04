@@ -44,8 +44,6 @@ public:
 
     POneMulti() = delete;
 
-    constexpr POneMulti() = default;
-
     // constructor
     POneMulti(MLMGParam const& mlmgpp,
         amrex::Vector<amrex::Geometry> const& geom,
