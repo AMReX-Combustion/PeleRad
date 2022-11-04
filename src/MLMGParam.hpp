@@ -29,7 +29,7 @@ public:
     int fine_level_solve_only_;
     bool use_hypre_;
 
-    constexpr MLMGParam() = default;
+    //    MLMGParam() = default;
 
     AMREX_GPU_HOST
     MLMGParam(const amrex::ParmParse& pp) : pp_(pp)

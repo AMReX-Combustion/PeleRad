@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+
+include(CMakeFindDependencyMacro)
+
+include("${CMAKE_CURRENT_LIST_DIR}/PeleRadSettings.cmake")
+if(PELERAD_ENABLE_MPI)
+  find_dependency(MPI)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/PeleRadTargets.cmake")
+check_required_components(PeleRad)

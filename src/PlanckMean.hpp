@@ -24,10 +24,15 @@ private:
     amrex::GpuArray<amrex::Real, 126ul> kpsoot_;
 
 public:
-    constexpr PlanckMean() = default;
+    // PlanckMean() = default;
+    AMREX_GPU_HOST
+    PlanckMean() { }
 
     AMREX_GPU_HOST
-    PlanckMean(std::string data_path)
+    PlanckMean(std::string data_path) { load(data_path); }
+
+    AMREX_GPU_HOST
+    void load(std::string data_path)
     {
         bfs_path kplco2(data_path + "kpl_co2.dat");
         bfs_path kplh2o(data_path + "kpl_h2o.dat");
@@ -74,25 +79,16 @@ public:
     }
 
     AMREX_GPU_HOST_DEVICE
-    constexpr const amrex::GpuArray<amrex::Real, 126ul>& kpco2() const
-    {
-        return kpco2_;
-    }
+    const amrex::GpuArray<amrex::Real, 126ul>& kpco2() const { return kpco2_; }
 
     AMREX_GPU_HOST_DEVICE
-    constexpr const amrex::GpuArray<amrex::Real, 126ul>& kph2o() const
-    {
-        return kph2o_;
-    }
+    const amrex::GpuArray<amrex::Real, 126ul>& kph2o() const { return kph2o_; }
 
     AMREX_GPU_HOST_DEVICE
-    constexpr const amrex::GpuArray<amrex::Real, 126ul>& kpco() const
-    {
-        return kpco_;
-    }
+    const amrex::GpuArray<amrex::Real, 126ul>& kpco() const { return kpco_; }
 
     AMREX_GPU_HOST_DEVICE
-    constexpr const amrex::GpuArray<amrex::Real, 126ul>& kpsoot() const
+    const amrex::GpuArray<amrex::Real, 126ul>& kpsoot() const
     {
         return kpsoot_;
     }

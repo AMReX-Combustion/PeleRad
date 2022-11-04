@@ -2,6 +2,7 @@
 
 #define BOOST_TEST_MODULE ponerobinsingle
 
+#include <AMReX_MultiFabUtil.H>
 #include <AMReX_PlotFileUtil.H>
 #include <POneSingle.hpp>
 
@@ -47,74 +48,35 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     }
 
     // Robin BC
-    bool robin_cell = false;
-    double sign     = 1.0;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x)
+        if (i > dhi.x || i < dlo.x)
         {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-
-        if (i < dlo.x)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
-
-        if (robin_cell)
-        {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
-
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
             robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                                + robin_b(i, j, k) * npioverL * coscossin;
         }
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y)
+        if (j > dhi.y || j < dlo.y)
         {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-
-        if (j < dlo.y)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
-
-        if (robin_cell)
-        {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
 
             double msinsinsin = -std::sin(npioverL * x) * std::sin(npioverL * y)
                                 * std::sin(npioverL * z);
-
             robin_f(i, j, k) = robin_a(i, j, k) * sol(i, j, k)
                                + robin_b(i, j, k) * npioverL * msinsinsin;
         }
     }
-
     else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
     {
-        if (k > dhi.z)
+        if (k > dhi.z || k < dlo.z)
         {
-            robin_cell = true;
-            sign       = -1.0;
-        }
-        if (k < dlo.z)
-        {
-            robin_cell = true;
-            sign       = 1.0;
-        }
-        if (robin_cell)
-        {
-            robin_a(i, j, k) = 1.0;
-            robin_b(i, j, k) = -4.0 / 3.0 * sign;
+            robin_a(i, j, k) = -1.0;
+            robin_b(i, j, k) = -2.0 / 3.0;
 
             double sincoscos = -std::sin(npioverL * x) * std::cos(npioverL * y)
                                * std::cos(npioverL * z);
@@ -231,10 +193,11 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     amrex::MultiFab robin_b;
     amrex::MultiFab robin_f;
 
-    std::cout << "initialize data ... \n";
+    // std::cout << "initialize data ... \n";
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, exact_solution,
         acoef, bcoef, robin_a, robin_b, robin_f);
-    std::cout << "construct the PDE ... \n";
+
+    // std::cout << "construct the PDE ... \n";
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
         amrex::LinOpBCType::Neumann) };
@@ -243,7 +206,8 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         amrex::LinOpBCType::Neumann) };
     PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
         bcoef, lobc, hibc, robin_a, robin_b, robin_f);
-    std::cout << "solve the PDE ... \n";
+
+    // std::cout << "solve the PDE ... \n";
     rte.solve();
 
     auto eps = check_norm(solution, exact_solution);
@@ -265,7 +229,16 @@ BOOST_AUTO_TEST_CASE(p1_robin)
         auto const plot_file_name = amrpp.plot_file_name_;
         amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
             { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+
+        // for amrvis
+        /*
+        amrex::writeFabs(solution, "solution");
+        amrex::writeFabs(bcoef, "bcoef");
+        amrex::writeFabs(robin_a, "robin_a");
+        amrex::writeFabs(robin_b, "robin_b");
+        amrex::writeFabs(robin_f, "robin_f");
+        */
     }
 
-    BOOST_TEST(eps < 1e-1);
+    BOOST_TEST(eps < 1e-3);
 }

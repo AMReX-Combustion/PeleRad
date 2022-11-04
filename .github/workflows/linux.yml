@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   serial:
     name: serial
-    runs-on: [ubuntu-18.04]
+    runs-on: [ubuntu-20.04]
 
     steps:
     - uses: actions/checkout@v2
@@ -22,8 +22,8 @@ jobs:
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
+        sudo apt install libboost1.74
+        sudo apt install libboost1.74-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
@@ -68,8 +68,8 @@ jobs:
         # boost
         sudo add-apt-repository ppa:mhier/libboost-latest
         sudo apt-get update
-        sudo apt install libboost1.68
-        sudo apt install libboost1.68-dev
+        sudo apt install libboost1.74
+        sudo apt install libboost1.74-dev
         # AMREX
         git clone https://github.com/AMReX-Codes/amrex.git ${{runner.workspace}}/deps/amrex
     - name: configure
