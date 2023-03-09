@@ -8,8 +8,8 @@ plot_file_name = "pltRobinMultiLevbyLev"
 #mlmg
 composite_solve = 0
 use_hypre = 0
-verbose = 0
-bottom_verbose = 0
+verbose = 2
+bottom_verbose = 2
 max_iter = 20
 max_fmg_iter = 0
 max_coarsening_level = 10

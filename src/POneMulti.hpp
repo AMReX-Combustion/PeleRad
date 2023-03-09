@@ -17,18 +17,19 @@ class POneMulti
 private:
     MLMGParam mlmgpp_;
 
+    amrex::LPInfo info_;
 public:
-    amrex::Vector<amrex::Geometry> const& geom_;
-    amrex::Vector<amrex::BoxArray> const& grids_;
-    amrex::Vector<amrex::DistributionMapping> const& dmap_;
+    amrex::Vector<amrex::Geometry> & geom_;
+    amrex::Vector<amrex::BoxArray> & grids_;
+    amrex::Vector<amrex::DistributionMapping> & dmap_;
 
     amrex::Vector<amrex::MultiFab>& solution_;
     amrex::Vector<amrex::MultiFab> const& rhs_;
     amrex::Vector<amrex::MultiFab> const& acoef_;
     amrex::Vector<amrex::MultiFab> const& bcoef_;
 
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc_;
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc_;
+    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc_;
+    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc_;
 
     amrex::Vector<amrex::MultiFab> const& robin_a_;
     amrex::Vector<amrex::MultiFab> const& robin_b_;
@@ -46,15 +47,15 @@ public:
 
     // constructor
     POneMulti(MLMGParam const& mlmgpp,
-        amrex::Vector<amrex::Geometry> const& geom,
-        amrex::Vector<amrex::BoxArray> const& grids,
-        amrex::Vector<amrex::DistributionMapping> const& dmap,
+        amrex::Vector<amrex::Geometry> & geom,
+        amrex::Vector<amrex::BoxArray> & grids,
+        amrex::Vector<amrex::DistributionMapping> & dmap,
         amrex::Vector<amrex::MultiFab>& solution,
         amrex::Vector<amrex::MultiFab> const& rhs,
         amrex::Vector<amrex::MultiFab> const& acoef,
         amrex::Vector<amrex::MultiFab> const& bcoef,
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc,
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc,
+//        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc,
+//        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc,
         amrex::Vector<amrex::MultiFab> const& robin_a,
         amrex::Vector<amrex::MultiFab> const& robin_b,
         amrex::Vector<amrex::MultiFab> const& robin_f)
@@ -66,8 +67,8 @@ public:
           rhs_(rhs),
           acoef_(acoef),
           bcoef_(bcoef),
-          lobc_(lobc),
-          hibc_(hibc),
+//          lobc_(lobc),
+//          hibc_(hibc),
           robin_a_(robin_a),
           robin_b_(robin_b),
           robin_f_(robin_f)
@@ -77,15 +78,15 @@ public:
         auto const consolidation        = mlmgpp_.consolidation_;
         auto const linop_maxorder       = mlmgpp_.linop_maxorder_;
 
-        amrex::LPInfo info;
-        info.setAgglomeration(agglomeration);
-        info.setConsolidation(consolidation);
-        info.setMaxCoarseningLevel(max_coarsening_level);
+        //amrex::LPInfo info;
+        info_.setAgglomeration(agglomeration);
+        info_.setConsolidation(consolidation);
+        info_.setMaxCoarseningLevel(max_coarsening_level);
 
         //      mlabec_.define(geom_, grids_, dmap_, info);
 
         mlabec_ = std::make_unique<amrex::MLABecLaplacian>(
-            geom_, grids_, dmap_, info);
+            geom_, grids_, dmap_, info_);
 
         mlabec_->setDomainBC(lobc_, hibc_);
         mlabec_->setScalars(ascalar_, bscalar_);
@@ -104,6 +105,14 @@ public:
         mlmg_->setBottomVerbose(bottom_verbose);
 
         if (use_hypre) mlmg_->setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+    }
+
+    void regrid( amrex::Vector<amrex::BoxArray> const& grids,
+        amrex::Vector<amrex::DistributionMapping> const& dmap)
+    {
+        grids_=grids;
+        dmap_=dmap;
+        mlabec_->define(geom_, grids_, dmap_, info_);
     }
 
     void solve()
