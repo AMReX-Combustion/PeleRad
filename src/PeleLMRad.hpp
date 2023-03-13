@@ -150,7 +150,7 @@ public:
 
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                betafab(i, j, k) = 10.0;
+                betafab(i, j, k) = 1.0;
 
                 if (bx.contains(i, j, k))
                 {

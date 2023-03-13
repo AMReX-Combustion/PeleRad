@@ -329,12 +329,6 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
         pressure, absc);
 
     std::cout << "construct the PDE ... \n";
-/*    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Neumann) };
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Neumann) };*/
 
     if (composite_solve)
     {

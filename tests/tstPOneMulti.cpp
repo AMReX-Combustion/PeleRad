@@ -251,12 +251,6 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, exact_solution,
         acoef, bcoef, robin_a, robin_b, robin_f);
     //    std::cout << "construct the PDE ... \n";
-/*    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
-        amrex::LinOpBCType::Neumann) };
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
-        amrex::LinOpBCType::Neumann) };*/
     if (composite_solve)
     {
 
