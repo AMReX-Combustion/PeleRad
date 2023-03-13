@@ -251,25 +251,25 @@ BOOST_AUTO_TEST_CASE(p1_robin)
     initMeshandData(amrpp, geom, grids, dmap, solution, rhs, exact_solution,
         acoef, bcoef, robin_a, robin_b, robin_f);
     //    std::cout << "construct the PDE ... \n";
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
+/*    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
         amrex::LinOpBCType::Neumann) };
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
         amrex::LinOpBCType::Robin, amrex::LinOpBCType::Dirichlet,
-        amrex::LinOpBCType::Neumann) };
+        amrex::LinOpBCType::Neumann) };*/
     if (composite_solve)
     {
 
         std::cout << "composite solve ... \n";
         PeleRad::POneMulti rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
-            bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+            bcoef, robin_a, robin_b, robin_f);
         rte.solve();
     }
     else
     {
         std::cout << "level by level solve ... \n";
         PeleRad::POneMultiLevbyLev rte(mlmgpp, ref_ratio, geom, grids, dmap,
-            solution, rhs, acoef, bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+            solution, rhs, acoef, bcoef, robin_a, robin_b, robin_f);
         rte.solve();
     }
 

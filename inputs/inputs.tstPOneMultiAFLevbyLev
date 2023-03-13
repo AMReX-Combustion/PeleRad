@@ -8,8 +8,8 @@ plot_file_name = "pltRobinAFMultiLevbyLev"
 #mlmg
 composite_solve = 0
 use_hypre = 0
-verbose = 2
-bottom_verbose = 2
+verbose = 0
+bottom_verbose = 0
 max_iter = 200
 max_fmg_iter = 0
 max_coarsening_level = 10
@@ -19,5 +19,5 @@ linop_maxorder = 2
 agglomeration = 1
 consolidation = 1
 
-lo_bc= Robin Robin Neumann
+lo_bc = Robin Robin Neumann
 hi_bc = Robin Robin Neumann

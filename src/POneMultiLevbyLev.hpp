@@ -68,28 +68,14 @@ public:
         auto const max_coarsening_level = mlmgpp_.max_coarsening_level_;
         auto const agglomeration        = mlmgpp_.agglomeration_;
         auto const consolidation        = mlmgpp_.consolidation_;
-        auto const max_iter             = mlmgpp_.max_iter_;
-        auto const max_fmg_iter         = mlmgpp_.max_fmg_iter_;
-        auto const verbose              = mlmgpp_.verbose_;
-        auto const bottom_verbose       = mlmgpp_.bottom_verbose_;
-        auto const use_hypre            = mlmgpp_.use_hypre_;
-
-        auto const& lobc = mlmgpp_.lobc_;
-        auto const& hibc = mlmgpp_.hibc_;
-
         info_.setAgglomeration(agglomeration);
         info_.setConsolidation(consolidation);
         info_.setMaxCoarseningLevel(max_coarsening_level);
-
-        auto const nlevels = geom_.size();
     }
 
     void solve()
     {
         int const solver_level = 0;
-        auto const nlevels     = geom_.size();
-        auto const tol_rel     = mlmgpp_.reltol_;
-        auto const tol_abs     = mlmgpp_.abstol_;
 
         auto const linop_maxorder = mlmgpp_.linop_maxorder_;
         auto const max_iter       = mlmgpp_.max_iter_;
@@ -98,12 +84,16 @@ public:
         auto const bottom_verbose = mlmgpp_.bottom_verbose_;
         auto const use_hypre      = mlmgpp_.use_hypre_;
 
+        auto const nlevels = geom_.size();
+
+        auto const tol_rel = mlmgpp_.reltol_;
+        auto const tol_abs = mlmgpp_.abstol_;
+
         auto const& lobc = mlmgpp_.lobc_;
         auto const& hibc = mlmgpp_.hibc_;
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
-            auto const& geom    = geom_[ilev];
             auto& solution      = solution_[ilev];
             auto const& rhs     = rhs_[ilev];
             auto const& acoef   = acoef_[ilev];
@@ -138,7 +128,7 @@ public:
             }
 
             amrex::average_cellcenter_to_face(
-                GetArrOfPtrs(face_bcoef), bcoef, geom);
+                GetArrOfPtrs(face_bcoef), bcoef, geom_[ilev]);
 
             mlabeclev.setBCoeffs(
                 solver_level, amrex::GetArrOfConstPtrs(face_bcoef));
@@ -146,7 +136,7 @@ public:
             amrex::MLMG mlmglev(mlabeclev);
             mlmglev.setMaxIter(max_iter);
             mlmglev.setMaxFmgIter(max_fmg_iter);
-            mlmglev.setBottomMaxIter(100);
+            // mlmglev.setBottomMaxIter(100);
 
             mlmglev.setVerbose(verbose);
             mlmglev.setBottomVerbose(bottom_verbose);
@@ -162,9 +152,7 @@ public:
                 //                mlmglev.setHypreInterface(hypre_interface);
             }
 
-            amrex::ParallelDescriptor::Barrier();
             mlmglev.solve({ &solution }, { &rhs }, tol_rel, tol_abs);
-            amrex::ParallelDescriptor::Barrier();
         }
     }
 };

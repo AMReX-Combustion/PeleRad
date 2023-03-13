@@ -16,3 +16,6 @@ abstol = 1.e-5
 linop_maxorder = 2
 agglomeration = 1
 consolidation = 1
+
+lo_bc = Robin Dirichlet Neumann
+hi_bc = Robin Dirichlet Neumann

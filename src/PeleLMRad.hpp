@@ -150,7 +150,7 @@ public:
 
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                betafab(i, j, k) = 1.0;
+                betafab(i, j, k) = 10.0;
 
                 if (bx.contains(i, j, k))
                 {
@@ -218,13 +218,6 @@ public:
     {
         auto const nlevels = geom_.size();
 
-        /*
-                for (int ilev = 0; ilev < nlevels; ++ilev)
-                {
-                    solution_[ilev].FillBoundary(geom_[ilev].periodicity());
-                    bcoef_[ilev].FillBoundary(geom_[ilev].periodicity());
-                }
-        */
         if (composite_solve_) { rte_->solve(); }
         else
         {
