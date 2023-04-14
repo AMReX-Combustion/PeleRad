@@ -27,9 +27,6 @@ public:
     amrex::MultiFab const& acoef_;
     amrex::MultiFab const& bcoef_;
 
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc_;
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc_;
-
     amrex::MultiFab const& robin_a_;
     amrex::MultiFab const& robin_b_;
     amrex::MultiFab const& robin_f_;
@@ -44,8 +41,6 @@ public:
         amrex::BoxArray const& grids, amrex::DistributionMapping const& dmap,
         amrex::MultiFab& solution, amrex::MultiFab const& rhs,
         amrex::MultiFab const& acoef, amrex::MultiFab const& bcoef,
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& lobc,
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> const& hibc,
         amrex::MultiFab const& robin_a, amrex::MultiFab const& robin_b,
         amrex::MultiFab const& robin_f)
         : mlmgpp_(mlmgpp),
@@ -56,13 +51,9 @@ public:
           rhs_(rhs),
           acoef_(acoef),
           bcoef_(bcoef),
-          lobc_(lobc),
-          hibc_(hibc),
           robin_a_(robin_a),
           robin_b_(robin_b),
-          robin_f_(robin_f) {
-              // std::cout << "linear solver constructor called" << std::endl;
-          };
+          robin_f_(robin_f) {};
 
     void solve()
     {
@@ -74,6 +65,9 @@ public:
         auto const tol_rel              = mlmgpp_.reltol_;
         auto const tol_abs              = mlmgpp_.abstol_;
         auto const use_hypre            = mlmgpp_.use_hypre_;
+
+        auto const& lobc = mlmgpp_.lobc_;
+        auto const& hibc = mlmgpp_.hibc_;
 
         auto const& geom  = geom_;
         auto const& grids = grids_;
@@ -90,7 +84,7 @@ public:
         amrex::MLABecLaplacian mlabec({ geom }, { grids }, { dmap },
             amrex::LPInfo().setMaxCoarseningLevel(max_coarsening_level));
 
-        mlabec.setDomainBC(lobc_, hibc_);
+        mlabec.setDomainBC(lobc, hibc);
 
         mlabec.setLevelBC(0, &solution, &robin_a, &robin_b, &robin_f);
 
@@ -125,7 +119,6 @@ public:
 
     void calcRadSource(amrex::MultiFab& rad_src)
     {
-        // std::cout << "calcRadSource is called" << std::endl;
         for (amrex::MFIter mfi(rad_src); mfi.isValid(); ++mfi)
         {
             amrex::Box const& bx = mfi.validbox();

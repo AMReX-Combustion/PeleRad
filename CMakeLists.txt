@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(PeleRad CXX)
 
 add_library(PeleRad INTERFACE)
-set_target_properties(PeleRad PROPERTIES INTERFACE_COMPILE_FEATURES cxx_std_14)
+set_target_properties(PeleRad PROPERTIES INTERFACE_COMPILE_FEATURES cxx_std_17)
 add_dependencies(PeleRad record_hash)
 
 add_library(PeleRad::PeleRad ALIAS PeleRad)
@@ -13,7 +13,6 @@ if(PELERAD_ENABLE_MPI)
   target_link_libraries(PeleRad INTERFACE MPI::MPI_CXX)
 endif()
 
-find_package(Boost 1.74.0 REQUIRED COMPONENTS filesystem system iostreams program_options unit_test_framework)
 
 include(${CMAKE_SOURCE_DIR}/cmake/SetAmrexOptions.cmake)
 
@@ -25,7 +24,7 @@ if(PELERAD_ENABLE_CUDA)
       cmake_policy(SET CMP0104 OLD)
   endif()
   enable_language(CUDA)
-  include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
+#  include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
 endif()
 
 target_include_directories(PeleRad INTERFACE
@@ -77,6 +76,7 @@ endif()
 option(PELERAD_ENABLE_TESTS "Enalbe tests" OFF)
 
 if(${PELERAD_ENABLE_TESTS})
+  find_package(Boost 1.74.0 REQUIRED COMPONENTS program_options unit_test_framework)
   enable_testing()
   add_subdirectory(tests)
 endif()

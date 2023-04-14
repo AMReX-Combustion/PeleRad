@@ -1,9 +1,8 @@
 #ifndef PLANCK_MEAN_HPP
 #define PLANCK_MEAN_HPP
 
-#include <boost/filesystem.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/iostreams/stream.hpp>
+#include <filesystem>
+#include <fstream>
 
 #include <AMReX.H>
 #include <AMReX_Gpu.H>
@@ -14,17 +13,12 @@ namespace PeleRad
 class PlanckMean
 {
 private:
-    using bfs_path = boost::filesystem::path;
-    using bio_mappedsrc
-        = boost::iostreams::stream<boost::iostreams::mapped_file_source>;
-
     amrex::GpuArray<amrex::Real, 126ul> kpco2_;
     amrex::GpuArray<amrex::Real, 126ul> kph2o_;
     amrex::GpuArray<amrex::Real, 126ul> kpco_;
     amrex::GpuArray<amrex::Real, 126ul> kpsoot_;
 
 public:
-    // PlanckMean() = default;
     AMREX_GPU_HOST
     PlanckMean() { }
 
@@ -34,20 +28,20 @@ public:
     AMREX_GPU_HOST
     void load(std::string data_path)
     {
-        bfs_path kplco2(data_path + "kpl_co2.dat");
-        bfs_path kplh2o(data_path + "kpl_h2o.dat");
-        bfs_path kplco(data_path + "kpl_co.dat");
-        bfs_path kplsoot(data_path + "kpl_soot.dat");
+        std::filesystem::path kplco2(data_path + "kpl_co2.dat");
+        std::filesystem::path kplh2o(data_path + "kpl_h2o.dat");
+        std::filesystem::path kplco(data_path + "kpl_co.dat");
+        std::filesystem::path kplsoot(data_path + "kpl_soot.dat");
 
-        boost::filesystem::exists(kplco2);
-        boost::filesystem::exists(kplh2o);
-        boost::filesystem::exists(kplco);
-        boost::filesystem::exists(kplsoot);
+        std::filesystem::exists(kplco2);
+        std::filesystem::exists(kplh2o);
+        std::filesystem::exists(kplco);
+        std::filesystem::exists(kplsoot);
 
-        bio_mappedsrc dataco2(kplco2);
-        bio_mappedsrc datah2o(kplh2o);
-        bio_mappedsrc dataco(kplco);
-        bio_mappedsrc datasoot(kplsoot);
+        std::ifstream dataco2(kplco2);
+        std::ifstream datah2o(kplh2o);
+        std::ifstream dataco(kplco);
+        std::ifstream datasoot(kplsoot);
 
         size_t i_co2 = 0;
         for (float T_temp, kp_temp; dataco2 >> T_temp >> kp_temp;)
@@ -76,6 +70,11 @@ public:
             kpsoot_[i_soot] = kp_temp;
             i_soot++;
         }
+
+        dataco2.close();
+        datah2o.close();
+        dataco.close();
+        datasoot.close();
     }
 
     AMREX_GPU_HOST_DEVICE

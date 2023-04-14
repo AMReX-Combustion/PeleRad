@@ -37,7 +37,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0e6 * 10;
+    pressure(i, j, k) = 1.0e6; // Pa
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
@@ -245,7 +245,6 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
     PeleRad::MLMGParam mlmgpp(pp);
 
     bool const write = false;
-    int const n_cell = amrpp.n_cell_;
 
     amrex::Geometry geom;
     amrex::BoxArray grids;
@@ -275,15 +274,9 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
         temperature, pressure, absc);
 
     // std::cout << "construct the PDE ... \n";
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Neumann) };
-    amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-        amrex::LinOpBCType::Robin, amrex::LinOpBCType::Robin,
-        amrex::LinOpBCType::Neumann) };
 
     PeleRad::POneSingle rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
-        bcoef, lobc, hibc, robin_a, robin_b, robin_f);
+        bcoef, robin_a, robin_b, robin_f);
     // std::cout << "solve the PDE ... \n";
     rte.solve();
 

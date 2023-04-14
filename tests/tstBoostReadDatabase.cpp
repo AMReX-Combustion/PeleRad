@@ -1,17 +1,12 @@
-#include <boost/filesystem.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <boost/test/unit_test.hpp>
+#include <filesystem>
+#include <fstream>
 
 #define BOOST_TEST_MODULE boostreaddatabase
-#include <iostream>
-#include <vector>
-
 #include <AMReX_MultiFab.H>
 
 namespace but = boost::unit_test;
-namespace bfs = boost::filesystem;
-namespace bio = boost::iostreams;
+namespace fs  = std::filesystem;
 
 BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
 {
@@ -23,11 +18,11 @@ BOOST_AUTO_TEST_CASE(boost_read_database, *but::tolerance(0.00001))
     data_path = "../../data/kpDB/";
 #endif
 
-    bfs::path kplco2(data_path + "kpl_co2.dat");
+    fs::path kplco2(data_path + "kpl_co2.dat");
 
-    BOOST_TEST(bfs::exists(kplco2));
+    BOOST_TEST(fs::exists(kplco2));
 
-    bio::stream<bio::mapped_file_source> data(kplco2);
+    std::ifstream data(kplco2);
 
     amrex::GpuArray<amrex::Real, 126ul> T;
     amrex::GpuArray<amrex::Real, 126ul> kpco2;
