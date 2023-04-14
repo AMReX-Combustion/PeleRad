@@ -76,6 +76,9 @@ public:
     void solve()
     {
         int const solver_level = 0;
+        auto const nlevels     = geom_.size();
+        auto const tol_rel     = mlmgpp_.reltol_;
+        auto const tol_abs     = mlmgpp_.abstol_;
 
         auto const linop_maxorder = mlmgpp_.linop_maxorder_;
         auto const max_iter       = mlmgpp_.max_iter_;
@@ -84,16 +87,12 @@ public:
         auto const bottom_verbose = mlmgpp_.bottom_verbose_;
         auto const use_hypre      = mlmgpp_.use_hypre_;
 
-        auto const nlevels = geom_.size();
-
-        auto const tol_rel = mlmgpp_.reltol_;
-        auto const tol_abs = mlmgpp_.abstol_;
-
         auto const& lobc = mlmgpp_.lobc_;
         auto const& hibc = mlmgpp_.hibc_;
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
+            auto const& geom    = geom_[ilev];
             auto& solution      = solution_[ilev];
             auto const& rhs     = rhs_[ilev];
             auto const& acoef   = acoef_[ilev];
@@ -128,7 +127,7 @@ public:
             }
 
             amrex::average_cellcenter_to_face(
-                GetArrOfPtrs(face_bcoef), bcoef, geom_[ilev]);
+                GetArrOfPtrs(face_bcoef), bcoef, geom);
 
             mlabeclev.setBCoeffs(
                 solver_level, amrex::GetArrOfConstPtrs(face_bcoef));
@@ -136,7 +135,7 @@ public:
             amrex::MLMG mlmglev(mlabeclev);
             mlmglev.setMaxIter(max_iter);
             mlmglev.setMaxFmgIter(max_fmg_iter);
-            // mlmglev.setBottomMaxIter(100);
+            mlmglev.setBottomMaxIter(100);
 
             mlmglev.setVerbose(verbose);
             mlmglev.setBottomVerbose(bottom_verbose);
