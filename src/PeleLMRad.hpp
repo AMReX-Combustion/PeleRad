@@ -251,10 +251,7 @@ public:
     {
         auto const nlevels = geom_.size();
 
-        if (composite_solve_)
-        {
-            rte_->solve();
-        }
+        if (composite_solve_) { rte_->solve(); }
         else
         {
             rtelevbylev_->solve();
