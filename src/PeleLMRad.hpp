@@ -1,8 +1,6 @@
 #ifndef RADIATION_HPP
 #define RADIATION_HPP
 
-//#include <AMRParam.hpp>
-//#include <MLMGParam.hpp>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
@@ -17,16 +15,15 @@ namespace PeleRad
 class Radiation
 {
 private:
-    //    AMRParam amrpp_;
     MLMGParam mlmgpp_;
 
     int ref_ratio_;
 
     PlanckMean radprop;
 
-    amrex::Vector<amrex::Geometry> const& geom_;
-    amrex::Vector<amrex::BoxArray> const& grids_;
-    amrex::Vector<amrex::DistributionMapping> const& dmap_;
+    amrex::Vector<amrex::Geometry>& geom_;
+    amrex::Vector<amrex::BoxArray>& grids_;
+    amrex::Vector<amrex::DistributionMapping>& dmap_;
 
     amrex::Vector<amrex::MultiFab> solution_;
     amrex::Vector<amrex::MultiFab> rhs_;
@@ -48,9 +45,9 @@ private:
 
 public:
     AMREX_GPU_HOST
-    Radiation(amrex::Vector<amrex::Geometry> const& geom,
-        amrex::Vector<amrex::BoxArray> const& grids,
-        amrex::Vector<amrex::DistributionMapping> const& dmap, RadComps rc,
+    Radiation(amrex::Vector<amrex::Geometry>& geom,
+        amrex::Vector<amrex::BoxArray>& grids,
+        amrex::Vector<amrex::DistributionMapping>& dmap, RadComps rc,
         amrex::ParmParse const& mlmgpp, int const& ref_ratio)
         : geom_(geom),
           grids_(grids),
@@ -61,7 +58,7 @@ public:
     {
         if (amrex::ParallelDescriptor::IOProcessor()) rc_.checkIndices();
 
-        auto const nlevels = geom.size();
+        auto const nlevels = geom_.size();
 
         solution_.resize(nlevels);
         rhs_.resize(nlevels);
@@ -72,29 +69,21 @@ public:
         robin_f_.resize(nlevels);
         absc_.resize(nlevels);
 
-        initVars(grids, dmap, nlevels);
+        initVars(grids, dmap);
         loadSpecModel();
-
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc { AMREX_D_DECL(
-            amrex::LinOpBCType::Robin, amrex::LinOpBCType::Periodic,
-            amrex::LinOpBCType::Periodic) };
-        amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc { AMREX_D_DECL(
-            amrex::LinOpBCType::Neumann, amrex::LinOpBCType::Periodic,
-            amrex::LinOpBCType::Periodic) };
 
         composite_solve_ = mlmgpp_.composite_solve_;
 
         if (composite_solve_)
         {
             rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
-                solution_, rhs_, acoef_, bcoef_, lobc, hibc, robin_a_, robin_b_,
-                robin_f_);
+                solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_);
         }
         else
         {
             rtelevbylev_ = std::make_unique<POneMultiLevbyLev>(mlmgpp_,
                 ref_ratio_, geom_, grids_, dmap_, solution_, rhs_, acoef_,
-                bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
+                bcoef_, robin_a_, robin_b_, robin_f_);
         }
     }
 
@@ -102,6 +91,7 @@ public:
     void loadSpecModel()
     {
         std::string data_path;
+        // spectral database on OLCF
         data_path = "/ccs/home/gwjgavin/Pele_dev/PeleRad/data/kpDB/";
 
         radprop.load(data_path);
@@ -109,8 +99,6 @@ public:
         amrex::Print() << "The radiative property database is loaded"
                        << "\n";
     }
-
-    void readRadParams(amrex::ParmParse const& pp) { }
 
     void updateSpecProp(amrex::MFIter const& mfi,
         amrex::Array4<const amrex::Real> const& Yco2,
@@ -125,7 +113,9 @@ public:
         ,
         int ilev)
     {
-        // std::cout << "update radiative properties" << std::endl;
+        amrex::Print() << "update radiative properties"
+                       << "\n";
+
         auto const& kpco2 = radprop.kpco2();
         auto const& kph2o = radprop.kph2o();
         auto const& kpco  = radprop.kpco();
@@ -160,7 +150,6 @@ public:
 
         amrex::ParallelFor(
             gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                // betafab(i, j, k) = 100.0; // for debug
                 betafab(i, j, k) = 1.0;
 
                 if (bx.contains(i, j, k))
@@ -176,14 +165,6 @@ public:
                                       * std::pow(T(i, j, k),
                                           4.0);*/ // cgs
                     alphafab(i, j, k) = ka;
-
-                    /*                    if (i == dlo.x) betafab(i - 1, j, k) =
-                       betafab(dlo.x, j, k); if (i == dhi.x) betafab(i + 1, j,
-                       k) = betafab(dhi.x, j, k); if (j == dlo.y) betafab(i, j -
-                       1, k) = betafab(i, dlo.y, k); if (j == dhi.y) betafab(i,
-                       j + 1, k) = betafab(i, dhi.y, k); if (k == dlo.z)
-                       betafab(i, j, k - 1) = betafab(i, j, dlo.z); if (k ==
-                       dhi.z) betafab(i, j, k + 1) = betafab(i, j, dhi.z);*/
                 }
 
                 // Robin BC
@@ -211,11 +192,13 @@ public:
     }
 
     void initVars(amrex::Vector<amrex::BoxArray> const& grids,
-        amrex::Vector<amrex::DistributionMapping> const& dmap, int nlevels)
+        amrex::Vector<amrex::DistributionMapping> const& dmap)
     {
         amrex::IntVect ng = amrex::IntVect { 1 };
+        grids_            = grids;
+        dmap_             = dmap;
 
-        for (int ilev = 0; ilev < nlevels; ++ilev)
+        for (int ilev = 0; ilev < grids.size(); ++ilev)
         {
             solution_[ilev].define(grids[ilev], dmap[ilev], 1, ng);
             rhs_[ilev].define(grids[ilev], dmap[ilev], 1, 0);
@@ -226,18 +209,14 @@ public:
             robin_f_[ilev].define(grids[ilev], dmap[ilev], 1, ng);
             absc_[ilev].define(grids[ilev], dmap[ilev], 1, 0);
 
-            solution_[ilev].setVal(0.0, 0, 1, amrex::IntVect(0));
+            solution_[ilev].setVal(0.0, 0, 1, ng);
+            bcoef_[ilev].setVal(1.0, 0, 1, ng);
         }
     }
 
     void evaluateRad()
     {
         auto const nlevels = geom_.size();
-        for (int ilev = 0; ilev < nlevels; ++ilev)
-        {
-            solution_[ilev].FillBoundary(geom_[ilev].periodicity());
-            bcoef_[ilev].FillBoundary(geom_[ilev].periodicity());
-        }
 
         if (composite_solve_) { rte_->solve(); }
         else

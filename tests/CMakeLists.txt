@@ -8,13 +8,13 @@ add_test(NAME PeleRad_BoostPropertyTree_Test COMMAND ./PeleRad_BoostPropertyTree
 
 add_executable(PeleRad_BoostReadDatabase.exe tstBoostReadDatabase.cpp ut_main.cpp)
 target_include_directories(PeleRad_BoostReadDatabase.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base)
-target_link_libraries(PeleRad_BoostReadDatabase.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_BoostReadDatabase.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_BoostReadDatabase.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_BoostReadDatabase_Test COMMAND ./PeleRad_BoostReadDatabase.exe)
 
 add_executable(PeleRad_AmrexGetRadProp.exe tstAmrexGetRadProp.cpp ut_main.cpp)
 target_include_directories(PeleRad_AmrexGetRadProp.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base)
-target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_AmrexGetRadProp.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_AmrexGetRadProp.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_AmrexGetRadProp_Test COMMAND ./PeleRad_AmrexGetRadProp.exe)
 
@@ -40,13 +40,13 @@ add_test(NAME PeleRad_POneMulti_Test_LevbyLev COMMAND  ${MPIEXEC_EXECUTABLE} ${M
 
 add_executable(PeleRad_POneSingleAF.exe tstPOneSingleAF.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingleAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
-target_link_libraries(PeleRad_POneSingleAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_POneSingleAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingleAF.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_POneSingleAF_Test COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneSingleAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingleAF" )
 
 add_executable(PeleRad_POneMultiAF.exe tstPOneMultiAF.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneMultiAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
-target_link_libraries(PeleRad_POneMultiAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_POneMultiAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneMultiAF.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_POneMultiAF_Test_Composite COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneMultiAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiAF" )
 add_test(NAME PeleRad_POneMultiAF_Test_LevbyLev COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneMultiAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiAFLevbyLev" )
@@ -73,13 +73,13 @@ add_test(NAME PeleRad_POneMulti_Test_LevbyLev COMMAND  ./PeleRad_POneMulti.exe "
 
 add_executable(PeleRad_POneSingleAF.exe tstPOneSingleAF.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneSingleAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
-target_link_libraries(PeleRad_POneSingleAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_POneSingleAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingleAF.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_POneSingleAF_Test COMMAND ./PeleRad_POneSingleAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingleAF" )
 
 add_executable(PeleRad_POneMultiAF.exe tstPOneMultiAF.cpp ut_main.cpp)
 target_include_directories(PeleRad_POneMultiAF.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG)
-target_link_libraries(PeleRad_POneMultiAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY})
+target_link_libraries(PeleRad_POneMultiAF.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneMultiAF.exe PRIVATE BOOST_TEST_DYN_LINK DATABASE_PATH="${CMAKE_SOURCE_DIR}/data/kpDB/")
 add_test(NAME PeleRad_POneMultiAF_Test_Composite COMMAND ./PeleRad_POneMultiAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiAF" )
 add_test(NAME PeleRad_POneMultiAF_Test_LevbyLev COMMAND ./PeleRad_POneMultiAF.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiAFLevbyLev" )
