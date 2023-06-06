@@ -109,7 +109,9 @@ public:
             mlabeclev.setDomainBC(lobc, hibc);
 
             if (ilev > 0)
-            { mlabeclev.setCoarseFineBC(&solution_[ilev - 1], ref_ratio_); }
+            {
+                mlabeclev.setCoarseFineBC(&solution_[ilev - 1], ref_ratio_);
+            }
 
             mlabeclev.setLevelBC(
                 solver_level, &solution, &robin_a, &robin_b, &robin_f);
@@ -140,15 +142,12 @@ public:
             mlmglev.setVerbose(verbose);
             mlmglev.setBottomVerbose(bottom_verbose);
 
-            mlmglev.setPreSmooth(2);
-            mlmglev.setPostSmooth(2);
-
-            mlmglev.setBottomSolver(amrex::MLMG::BottomSolver::bicgstab);
+            mlmglev.setBottomSolver(amrex::BottomSolver::bicgstab);
 
             if (use_hypre)
             {
-                mlmglev.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
-                //                mlmglev.setHypreInterface(hypre_interface);
+                mlmglev.setBottomSolver(amrex::BottomSolver::hypre);
+                // mlmglev.setHypreInterface(hypre_interface);
             }
 
             mlmglev.solve({ &solution }, { &rhs }, tol_rel, tol_abs);

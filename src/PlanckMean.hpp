@@ -1,7 +1,11 @@
 #ifndef PLANCK_MEAN_HPP
 #define PLANCK_MEAN_HPP
 
+#ifdef PELERAD_USE_HIP
+#include <experimental/filesystem>
+#else
 #include <filesystem>
+#endif
 #include <fstream>
 
 #include <AMReX.H>
@@ -28,15 +32,16 @@ public:
     AMREX_GPU_HOST
     void load(std::string data_path)
     {
-        std::filesystem::path kplco2(data_path + "kpl_co2.dat");
-        std::filesystem::path kplh2o(data_path + "kpl_h2o.dat");
-        std::filesystem::path kplco(data_path + "kpl_co.dat");
-        std::filesystem::path kplsoot(data_path + "kpl_soot.dat");
+#ifdef PELERAD_USE_HIP
+        using sfp = std::experimental::filesystem::path;
+#else
+        using sfp = std::filesystem::path;
+#endif
 
-        std::filesystem::exists(kplco2);
-        std::filesystem::exists(kplh2o);
-        std::filesystem::exists(kplco);
-        std::filesystem::exists(kplsoot);
+        sfp kplco2(data_path + "kpl_co2.dat");
+        sfp kplh2o(data_path + "kpl_h2o.dat");
+        sfp kplco(data_path + "kpl_co.dat");
+        sfp kplsoot(data_path + "kpl_soot.dat");
 
         std::ifstream dataco2(kplco2);
         std::ifstream datah2o(kplh2o);
