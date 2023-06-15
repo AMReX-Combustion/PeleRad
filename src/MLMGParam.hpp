@@ -30,10 +30,12 @@ public:
     bool use_hypre_;
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc_;
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc_;
+    std::string kppath_;
 
     AMREX_GPU_HOST
     MLMGParam(const amrex::ParmParse& pp) : pp_(pp)
     {
+        pp_.query("kppath", kppath_);
         pp_.query("verbose", verbose_);
         pp_.query("bottom_verbose", bottom_verbose_);
         pp_.query("max_iter", max_iter_);

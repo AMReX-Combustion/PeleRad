@@ -90,14 +90,14 @@ public:
     AMREX_GPU_HOST
     void loadSpecModel()
     {
-        std::string data_path;
-        // spectral database on OLCF
-        data_path = "/ccs/home/gwjgavin/Pele_dev/PeleRad/data/kpDB/";
+        // path to spectral database
+        auto data_path = mlmgpp_.kppath_;
 
         radprop.load(data_path);
 
-        amrex::Print() << "The radiative property database is loaded"
-                       << "\n";
+        amrex::Print() << "The radiative property database is loaded."
+                       << "\n"
+                       << "kp path: " << data_path << "\n";
     }
 
     void updateSpecProp(amrex::MFIter const& mfi,
@@ -113,8 +113,7 @@ public:
         ,
         int ilev)
     {
-        amrex::Print() << "update radiative properties"
-                       << "\n";
+        // amrex::Print() << "update radiative properties"<< "\n";
 
         auto const& kpco2 = radprop.kpco2();
         auto const& kph2o = radprop.kph2o();
@@ -134,22 +133,23 @@ public:
         auto const& robin_b_fab = robin_b_[ilev].array(mfi);
         auto const& robin_f_fab = robin_f_[ilev].array(mfi);
 
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 RadProp::getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
             });
 
 #ifdef PELELM_USE_SOOT
         auto const& kpsoot = radprop.kpsoot();
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                RadProp::getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
-            });
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            { RadProp::getRadPropSoot(i, j, k, fv, T, kappa, kpsoot); });
 #endif
 
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 betafab(i, j, k) = 1.0;
 
                 if (bx.contains(i, j, k))
@@ -171,15 +171,48 @@ public:
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
                 {
-                    if (i > dhi.x || i < dlo.x) { robin_cell = true; }
+                    if (i > dhi.x)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(dhi.x, j, k) * 100);
+                    }
+                    if (i < dlo.x)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(dlo.x, j, k) * 100);
+                    }
                 }
                 else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
                 {
-                    if (j > dhi.y || j < dlo.y) { robin_cell = true; }
+                    if (j > dhi.y)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(i, dhi.y, k) * 100);
+                    }
+                    if (j < dlo.y)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(i, dlo.y, k) * 100);
+                    }
                 }
                 else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
                 {
-                    if (k > dhi.z || k < dlo.z) { robin_cell = true; }
+                    if (k > dhi.z)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(i, j, dhi.z) * 100);
+                    }
+                    if (k < dlo.z)
+                    {
+                        robin_cell = true;
+                        betafab(i, j, k)
+                            = 1.0 / std::max(1.0, kappa(i, j, dlo.z) * 100);
+                    }
                 }
 
                 if (robin_cell)
@@ -233,8 +266,8 @@ public:
         auto const& solfab   = solution_[ilev].array(mfi);
         auto const& acfab    = acoef_[ilev].array(mfi);
 
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 radfab(i, j, k)
                     += acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
             });
