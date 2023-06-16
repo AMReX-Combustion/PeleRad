@@ -27,6 +27,11 @@ if(PELERAD_ENABLE_CUDA)
 #  include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
 endif()
 
+if(PELERAD_ENABLE_HIP)
+  add_definitions(-DPELERAD_USE_HIP=ON)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs")
+endif()
+
 target_include_directories(PeleRad INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
@@ -73,7 +78,7 @@ if(NOT CMAKE_BUILD_TYPE)
     FORCE)
 endif()
 
-option(PELERAD_ENABLE_TESTS "Enalbe tests" OFF)
+option(PELERAD_ENABLE_TESTS "Enable tests" OFF)
 
 if(${PELERAD_ENABLE_TESTS})
   find_package(Boost 1.74.0 REQUIRED COMPONENTS program_options unit_test_framework)
