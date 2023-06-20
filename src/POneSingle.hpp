@@ -34,8 +34,6 @@ public:
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
 
-    POneSingle() = default;
-
     // constructor
     POneSingle(MLMGParam const& mlmgpp, amrex::Geometry const& geom,
         amrex::BoxArray const& grids, amrex::DistributionMapping const& dmap,
@@ -129,8 +127,8 @@ public:
 
             auto radfab = rad_src.array(mfi);
 
-            amrex::ParallelFor(
-                bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+            amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                     radfab(i, j, k, 4)
                         = acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
                 });
