@@ -222,6 +222,7 @@ public:
                     robin_f_fab(i, j, k) = 0.0;
                 }
             });
+        bcoef_[ilev].FillBoundary();
     }
 
     void initVars(amrex::Vector<amrex::BoxArray> const& grids,
@@ -249,9 +250,10 @@ public:
 
     void evaluateRad()
     {
-        auto const nlevels = geom_.size();
-
-        if (composite_solve_) { rte_->solve(); }
+        if (composite_solve_)
+        {
+            rte_->solve();
+        }
         else
         {
             rtelevbylev_->solve();

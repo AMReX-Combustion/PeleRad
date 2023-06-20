@@ -12,9 +12,6 @@ BOOST_AUTO_TEST_CASE(amrex_parallel_for)
 
     int n_cell        = 256;
     int max_grid_size = 64;
-    ParmParse pp;
-    pp.query("n_cell", n_cell);
-    pp.query("max_grid_size", max_grid_size);
     Box domain_box(IntVect(0), IntVect(n_cell - 1));
     ba.define(domain_box);
     ba.maxSize(max_grid_size);
