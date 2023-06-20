@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(p1_robin_multi_AF)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write          = true;
+    bool const write          = false;
     int const nlevels         = amrpp.max_level_ + 1;
     int const ref_ratio       = amrpp.ref_ratio_;
     int const composite_solve = mlmgpp.composite_solve_;
