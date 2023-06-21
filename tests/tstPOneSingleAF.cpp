@@ -31,13 +31,13 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
-                                * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
+                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
     amrex::Real expTz = std::exp(-((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z))
                                  * ((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z)));
 
     temp(i, j, k) = 300.0 + 1700.0 * expr * expTz;
 
-    pressure(i, j, k) = 1.0e6; // Pa
+    pressure(i, j, k) = 1.0e5; // Pa
 
     amrex::Real expSoot
         = std::exp(-((4.0 * z - 1.0) / 0.7) * ((4.0 * z - 1.0) / 0.7));
@@ -67,12 +67,12 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Dim3 const& dhi, amrex::Box const& vbx,
     amrex::Array4<amrex::Real> const& absc, amrex::Array4<amrex::Real> const& T)
 {
-    beta(i, j, k) = 1;
+    beta(i, j, k) = 1.0;
     if (vbx.contains(i, j, k))
     {
-        double ka      = std::max(0.001, absc(i, j, k));
+        double ka      = std::max(0.001, absc(i, j, k) * 100);
         beta(i, j, k)  = 1.0 / ka;
-        rhs(i, j, k)   = 4.0 * ka * 5.67e-5 * std::pow(T(i, j, k), 4.0);
+        rhs(i, j, k)   = 4.0 * ka * 5.67e-8 * std::pow(T(i, j, k), 4.0);
         alpha(i, j, k) = ka;
     }
 }
@@ -90,11 +90,17 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
 
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
+        if (i > dhi.x || i < dlo.x)
+        {
+            robin_cell = true;
+        }
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
+        if (j > dhi.y || j < dlo.y)
+        {
+            robin_cell = true;
+        }
     }
 
     if (robin_cell)
@@ -149,8 +155,9 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& P         = pressure.array(mfi);
         auto const& kappa     = absc.array(mfi);
 
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 initGasField(
                     i, j, k, Yco2, Yh2o, Yco, fv, T, P, dx, prob_lo, prob_hi);
                 getRadPropGas(
@@ -159,10 +166,9 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
 
         // if soot exists
         // cudaDeviceSynchronize();
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
-            });
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            { getRadPropSoot(i, j, k, fv, T, kappa, kpsoot); });
 
         auto const& rhsfab = rhs.array(mfi);
         auto const& acfab  = acoef.array(mfi);
@@ -171,16 +177,17 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rbfab  = robin_b.array(mfi);
         auto const& rffab  = robin_f.array(mfi);
 
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 actual_init_coefs(
                     i, j, k, rhsfab, acfab, bcfab, dlo, dhi, bx, kappa, T);
             });
 
         // cudaDeviceSynchronize();
 
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 actual_init_bc_coefs(
                     i, j, k, acfab, bcfab, rafab, rbfab, rffab, dlo, dhi, T);
             });
@@ -236,6 +243,8 @@ void initMeshandData(PeleRad::AMRParam const& amrpp, amrex::Geometry& geom,
 
     initProbABecLaplacian(geom, solution, rhs, acoef, bcoef, robin_a, robin_b,
         robin_f, y_co2, y_h2o, y_co, soot_fv_rad, temperature, pressure, absc);
+
+    bcoef.FillBoundary();
 }
 
 BOOST_AUTO_TEST_CASE(p1_robin_AF)
@@ -291,8 +300,8 @@ BOOST_AUTO_TEST_CASE(p1_robin_AF)
 
         auto radfab = rad_src.array(mfi);
 
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
                 radfab(i, j, k)
                     = acfab(i, j, k) * solfab(i, j, k) - rhsfab(i, j, k);
             });

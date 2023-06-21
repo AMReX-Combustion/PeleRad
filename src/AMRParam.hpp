@@ -20,8 +20,6 @@ public:
     int prob_type_;
     std::string plot_file_name_;
 
-    //    AMRParam() = default;
-
     AMREX_GPU_HOST
     AMRParam(const amrex::ParmParse& pp) : pp_(pp)
     {

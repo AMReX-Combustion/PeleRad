@@ -108,8 +108,9 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
         auto const& rafab     = robin_a.array(mfi);
         auto const& rbfab     = robin_b.array(mfi);
         auto const& rffab     = robin_f.array(mfi);
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
                     rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
             });

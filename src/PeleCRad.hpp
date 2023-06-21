@@ -1,8 +1,6 @@
 #ifndef RADIATION_HPP
 #define RADIATION_HPP
 
-//#include <AMRParam.hpp>
-//#include <MLMGParam.hpp>
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
@@ -107,8 +105,9 @@ public:
         auto robin_b_fab = robin_b_.array(mfi);
         auto robin_f_fab = robin_f_.array(mfi);
 
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 RadProp::getRadPropGas(
                     i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
                 kappa(i, j, k) *= 0.1; // correction for P in cgs
@@ -116,14 +115,14 @@ public:
 
 #ifdef PELEC_USE_SOOT
         auto const& kpsoot = radprop.kpsoot();
-        amrex::ParallelFor(
-            bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-                RadProp::getRadPropSoot(i, j, k, fv, T, kappa, kpsoot);
-            });
+        amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            { RadProp::getRadPropSoot(i, j, k, fv, T, kappa, kpsoot); });
 #endif
 
-        amrex::ParallelFor(
-            gbx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
+        amrex::ParallelFor(gbx,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
                 betafab(i, j, k) = 1.0 / 0.001;
 
                 if (bx.contains(i, j, k))
@@ -141,15 +140,24 @@ public:
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
                 {
-                    if (i > dhi.x || i < dlo.x) { robin_cell = true; }
+                    if (i > dhi.x || i < dlo.x)
+                    {
+                        robin_cell = true;
+                    }
                 }
                 else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
                 {
-                    if (j > dhi.y || j < dlo.y) { robin_cell = true; }
+                    if (j > dhi.y || j < dlo.y)
+                    {
+                        robin_cell = true;
+                    }
                 }
                 else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
                 {
-                    if (k > dhi.z || k < dlo.z) { robin_cell = true; }
+                    if (k > dhi.z || k < dlo.z)
+                    {
+                        robin_cell = true;
+                    }
                 }
 
                 if (robin_cell)
@@ -159,6 +167,7 @@ public:
                     robin_f_fab(i, j, k) = 0.0;
                 }
             });
+        bcoef_.FillBoundary();
     }
 
     void evaluateRad(amrex::MultiFab& rad_src)
