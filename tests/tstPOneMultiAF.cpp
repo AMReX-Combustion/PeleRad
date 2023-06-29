@@ -33,7 +33,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void initGasField(int i, int j, int k,
     r /= coef;
 
     amrex::Real expr  = std::exp(-(4.0 * r / (0.05 + 0.1 * 4.0 * z))
-                                 * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
+                                * (4.0 * r / (0.05 + 0.1 * 4.0 * z)));
     amrex::Real expTz = std::exp(-((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z))
                                  * ((4.0 * z - 1.3) / (0.7 + 0.5 * 4.0 * z)));
 
@@ -91,17 +91,11 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_bc_coefs(int i, int j,
     bool robin_cell = false;
     if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
     {
-        if (i > dhi.x || i < dlo.x)
-        {
-            robin_cell = true;
-        }
+        if (i > dhi.x || i < dlo.x) { robin_cell = true; }
     }
     else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
     {
-        if (j > dhi.y || j < dlo.y)
-        {
-            robin_cell = true;
-        }
+        if (j > dhi.y || j < dlo.y) { robin_cell = true; }
     }
 
     if (robin_cell)

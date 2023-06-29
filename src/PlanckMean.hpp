@@ -26,6 +26,9 @@ private:
 
 public:
     AMREX_GPU_HOST
+    PlanckMean() = default;
+
+    AMREX_GPU_HOST
     PlanckMean(std::string data_path) { load(data_path); }
 
     AMREX_GPU_HOST

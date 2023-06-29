@@ -126,11 +126,13 @@ BOOST_AUTO_TEST_CASE(amrex_get_radprop)
         const Array4<Real>& P     = pressure.array(mfi);
         const Array4<Real>& kappa = absc.array(mfi);
 
-        ParallelFor(gbox, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
-            initGasField(i, j, k, Yco2, Yh2o, Yco, T, P, dx, plo, phi);
-            getRadPropGas(
-                i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
-        });
+        ParallelFor(gbox,
+            [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+            {
+                initGasField(i, j, k, Yco2, Yh2o, Yco, T, P, dx, plo, phi);
+                getRadPropGas(
+                    i, j, k, Yco2, Yh2o, Yco, T, P, kappa, kpco2, kph2o, kpco);
+            });
     }
 
     if (WRITE)
