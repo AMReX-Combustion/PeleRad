@@ -251,13 +251,9 @@ public:
     void evaluateRad()
     {
         if (composite_solve_)
-        {
             rte_->solve();
-        }
         else
-        {
             rtelevbylev_->solve();
-        }
     }
 
     void calcRadSource(amrex::MFIter const& mfi,
