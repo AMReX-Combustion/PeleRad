@@ -222,7 +222,6 @@ public:
                     robin_f_fab(i, j, k) = 0.0;
                 }
             });
-        bcoef_[ilev].FillBoundary();
     }
 
     void initVars(amrex::Vector<amrex::BoxArray> const& grids,
@@ -250,6 +249,8 @@ public:
 
     void evaluateRad()
     {
+        for (int ilev = 0; ilev < grids_.size(); ++ilev)
+            bcoef_[ilev].FillBoundary();
         if (composite_solve_)
             rte_->solve();
         else

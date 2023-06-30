@@ -140,24 +140,15 @@ public:
                 bool robin_cell = false;
                 if (j >= dlo.y && j <= dhi.y && k >= dlo.z && k <= dhi.z)
                 {
-                    if (i > dhi.x || i < dlo.x)
-                    {
-                        robin_cell = true;
-                    }
+                    if (i > dhi.x || i < dlo.x) { robin_cell = true; }
                 }
                 else if (i >= dlo.x && i <= dhi.x && k >= dlo.z && k <= dhi.z)
                 {
-                    if (j > dhi.y || j < dlo.y)
-                    {
-                        robin_cell = true;
-                    }
+                    if (j > dhi.y || j < dlo.y) { robin_cell = true; }
                 }
                 else if (i >= dlo.x && i <= dhi.x && j >= dlo.y && j <= dhi.y)
                 {
-                    if (k > dhi.z || k < dlo.z)
-                    {
-                        robin_cell = true;
-                    }
+                    if (k > dhi.z || k < dlo.z) { robin_cell = true; }
                 }
 
                 if (robin_cell)
@@ -167,7 +158,6 @@ public:
                     robin_f_fab(i, j, k) = 0.0;
                 }
             });
-        bcoef_.FillBoundary();
     }
 
     void evaluateRad(amrex::MultiFab& rad_src)
@@ -181,15 +171,13 @@ public:
             amrex::LinOpBCType::Periodic) };
 
         amrex::ParmParse pp("pelerad");
-        // std::cout << "before the mlmgpp" << std::endl;
         MLMGParam mlmgpp(pp);
+
+        bcoef_.FillBoundary();
 
         // std::cout << "before the rte constructor" << std::endl;
         POneSingle rte(mlmgpp, geom_, grids_, dmap_, solution_, rhs_, acoef_,
             bcoef_, lobc, hibc, robin_a_, robin_b_, robin_f_);
-
-        solution_.FillBoundary(geom_.periodicity());
-        bcoef_.FillBoundary(geom_.periodicity());
 
         rte.solve();
 
