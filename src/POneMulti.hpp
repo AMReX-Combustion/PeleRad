@@ -89,14 +89,18 @@ public:
         auto const verbose        = mlmgpp_.verbose_;
         auto const bottom_verbose = mlmgpp_.bottom_verbose_;
         auto const use_hypre      = mlmgpp_.use_hypre_;
+        auto const bottom_reltol  = mlmgpp_.bottom_reltol_;
+        auto const bottom_abstol  = mlmgpp_.bottom_abstol_;
 
         amrex::MLMG mlmg(mlabec);
         mlmg.setMaxIter(max_iter);
         mlmg.setMaxFmgIter(max_fmg_iter);
         mlmg.setVerbose(verbose);
         mlmg.setBottomVerbose(bottom_verbose);
-
+        mlmg.setBottomSolver(amrex::BottomSolver::bicgstab);
         if (use_hypre) mlmg.setBottomSolver(amrex::MLMG::BottomSolver::hypre);
+        mlmg.setBottomTolerance(bottom_reltol);
+        mlmg.setBottomToleranceAbs(bottom_abstol);
 
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
