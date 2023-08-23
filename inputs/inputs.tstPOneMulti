@@ -1,7 +1,7 @@
 #amr
 max_level = 2
 ref_ratio = 2
-n_cell = 128
+n_cell = 64
 max_grid_size = 32
 plot_file_name = "pltRobinMultiComp"
 
