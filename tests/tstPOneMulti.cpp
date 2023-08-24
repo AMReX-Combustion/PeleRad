@@ -118,11 +118,13 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
             auto const& rafab     = robin_a[ilev].array(mfi);
             auto const& rbfab     = robin_b[ilev].array(mfi);
             auto const& rffab     = robin_f[ilev].array(mfi);
-            amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE(
-                                        int i, int j, int k) noexcept {
-                actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab, rafab,
-                    rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi, bx);
-            });
+            amrex::ParallelFor(gbx,
+                [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
+                {
+                    actual_init_coefs(i, j, k, rhsfab, solfab, acfab, bcfab,
+                        rafab, rbfab, rffab, prob_lo, prob_hi, dx, dlo, dhi,
+                        bx);
+                });
         }
 
         amrex::MultiFab::Copy(exact_solution[ilev], solution[ilev], 0, 0, 1, 0);

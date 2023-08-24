@@ -19,6 +19,7 @@ public:
     amrex::Real reltol_;
     amrex::Real abstol_;
     amrex::Real bottom_reltol_;
+    amrex::Real bottom_abstol_;
     int linop_maxorder_;
     int max_coarsening_level_;
     int agg_grid_size_;
@@ -44,6 +45,7 @@ public:
         pp_.query("reltol", reltol_);
         pp_.query("abstol", abstol_);
         pp_.query("bottom_reltol", bottom_reltol_);
+        pp_.query("bottom_abstol", bottom_abstol_);
         pp_.query("linop_maxorder", linop_maxorder_);
         pp_.query("max_coarsening_level", max_coarsening_level_);
         pp_.query("agg_grid_size", agg_grid_size_);
