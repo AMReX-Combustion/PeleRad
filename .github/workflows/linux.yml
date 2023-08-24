@@ -33,7 +33,7 @@ jobs:
               -DPELERAD_DIM=3 \
               -DPELERAD_ENABLE_MPI=OFF \
               -DPELERAD_ENABLE_OPENMP=OFF \
-              -DPELERAD_ENABLE_EB=OFF \
+              -DPELERAD_ENABLE_EB=ON \
               -DPELERAD_ENABLE_LINEARSOLVERS=ON \
               -DPELERAD_ENABLE_HYPRE=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
@@ -79,7 +79,7 @@ jobs:
               -DPELERAD_DIM=3 \
               -DPELERAD_ENABLE_MPI=ON \
               -DPELERAD_ENABLE_OPENMP=OFF \
-              -DPELERAD_ENABLE_EB=OFF \
+              -DPELERAD_ENABLE_EB=ON \
               -DPELERAD_ENABLE_LINEARSOLVERS=ON \
               -DPELERAD_ENABLE_HYPRE=OFF \
               -DPELERAD_ENABLE_TESTS=ON \
