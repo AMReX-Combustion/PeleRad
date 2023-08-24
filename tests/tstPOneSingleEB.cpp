@@ -8,6 +8,7 @@
 
 #include <AMReX_EB2.H>
 #include <AMReX_EB2_IF.H>
+#include <AMReX_EBFabFactory.H>
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs(int i, int j, int k,
     amrex::Array4<amrex::Real> const& rhs,
@@ -126,10 +127,10 @@ void initProbABecLaplacian(amrex::Geometry& geom, amrex::MultiFab& solution,
 void initMeshandData(PeleRad::AMRParam const& amrpp,
     PeleRad::MLMGParam const& mlmgpp, amrex::Geometry& geom,
     amrex::BoxArray& grids, amrex::DistributionMapping& dmap,
-    amrex::MultiFab& solution, amrex::MultiFab& rhs,
-    amrex::MultiFab& exact_solution, amrex::MultiFab& acoef,
-    amrex::MultiFab& bcoef, amrex::MultiFab& robin_a, amrex::MultiFab& robin_b,
-    amrex::MultiFab& robin_f)
+    amrex::MultiFab& solution, amrex::MultiFab& solution_eb,
+    amrex::MultiFab& rhs, amrex::MultiFab& exact_solution,
+    amrex::MultiFab& acoef, amrex::MultiFab& bcoef, amrex::MultiFab& robin_a,
+    amrex::MultiFab& robin_b, amrex::MultiFab& robin_f)
 {
     int const n_cell        = amrpp.n_cell_;
     int const max_grid_size = amrpp.max_grid_size_;
@@ -147,13 +148,13 @@ void initMeshandData(PeleRad::AMRParam const& amrpp,
 
     // rotated box
     int const max_coarsening_level = mlmgpp.max_coarsening_level_;
-    amrex::EB2::BoxIF box({ AMREX_D_DECL(0.25, 0.25, 0.25) },
+    amrex::EB2::BoxIF box({ AMREX_D_DECL(-0.75, -0.75, -0.75) },
         { AMREX_D_DECL(0.75, 0.75, 0.75) }, true);
     auto gshop = amrex::EB2::makeShop(amrex::EB2::translate(
         amrex::EB2::rotate(
-            amrex::EB2::translate(box, { AMREX_D_DECL(-0.5, -0.5, -0.5) }),
+            amrex::EB2::translate(box, { AMREX_D_DECL(-0.0, -0.0, -0.0) }),
             std::atan(1.0) * 0.3, 2),
-        { AMREX_D_DECL(0.5, 0.5, 0.5) }));
+        { AMREX_D_DECL(0.0, 0.0, 0.0) }));
     amrex::EB2::Build(gshop, geom, 0, max_coarsening_level);
 
     amrex::IntVect ng = amrex::IntVect { 1 };
@@ -192,7 +193,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write = false;
+    bool const write = true;
     int const n_cell = amrpp.n_cell_;
 
     amrex::Geometry geom;
@@ -200,6 +201,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     amrex::DistributionMapping dmap;
 
     amrex::MultiFab solution;
+    amrex::MultiFab solution_eb;
     amrex::MultiFab rhs;
     amrex::MultiFab exact_solution;
 
@@ -210,8 +212,15 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     amrex::MultiFab robin_f;
 
     // std::cout << "initialize data ... \n";
-    initMeshandData(amrpp, mlmgpp, geom, grids, dmap, solution, rhs,
-        exact_solution, acoef, bcoef, robin_a, robin_b, robin_f);
+    initMeshandData(amrpp, mlmgpp, geom, grids, dmap, solution, solution_eb,
+        rhs, exact_solution, acoef, bcoef, robin_a, robin_b, robin_f);
+
+    const amrex::EB2::IndexSpace& eb_is = amrex::EB2::IndexSpace::top();
+    const amrex::EB2::Level& eb_level   = eb_is.getLevel(geom);
+    auto factory = std::make_unique<amrex::EBFArrayBoxFactory>(eb_level, geom,
+        grids, dmap, amrex::Vector<int> { 2, 2, 2 }, amrex::EBSupport::full);
+
+    solution_eb.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
 
     // std::cout << "construct the PDE ... \n";
     PeleRad::POneSingleEB rte(mlmgpp, geom, grids, dmap, solution, rhs, acoef,
@@ -229,16 +238,24 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     if (write)
     {
         std::cout << "write the results ... \n";
-        amrex::MultiFab plotmf(grids, dmap, 4, 0);
-        amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
-        amrex::MultiFab::Copy(plotmf, rhs, 0, 1, 1, 0);
-        amrex::MultiFab::Copy(plotmf, exact_solution, 0, 2, 1, 0);
-        amrex::MultiFab::Copy(plotmf, solution, 0, 3, 1, 0);
-        amrex::MultiFab::Subtract(plotmf, plotmf, 2, 3, 1, 0);
+        amrex::MultiFab const& vfrc = factory->getVolFrac();
+        amrex::MultiFab plotmf(grids, dmap, 2, 0);
+        amrex::MultiFab::Copy(plotmf, solution_eb, 0, 0, 1, 0);
+        amrex::MultiFab::Copy(plotmf, vfrc, 0, 1, 1, 0);
+        /*        amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
+                amrex::MultiFab::Copy(plotmf, rhs, 0, 1, 1, 0);
+                amrex::MultiFab::Copy(plotmf, exact_solution, 0, 2, 1, 0);
+                amrex::MultiFab::Copy(plotmf, solution, 0, 3, 1, 0);
+                amrex::MultiFab::Subtract(plotmf, plotmf, 2, 3, 1, 0);
+
+                auto const plot_file_name = amrpp.plot_file_name_;
+                amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
+                    { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+        */
 
         auto const plot_file_name = amrpp.plot_file_name_;
-        amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
-            { "phi", "rhs", "exact", "error" }, geom, 0.0, 0);
+        amrex::WriteSingleLevelPlotfile(
+            plot_file_name, plotmf, { "phi", "vfrac" }, geom, 0.0, 0);
 
         // for amrvis
         /*
