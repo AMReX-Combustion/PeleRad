@@ -19,5 +19,5 @@ linop_maxorder = 2
 agglomeration = 1
 consolidation = 0
 
-lo_bc = Robin Dirichlet Neumann
-hi_bc = Robin Dirichlet Neumann
+lo_bc = Periodic Periodic Periodic
+hi_bc = Periodic Periodic Periodic
