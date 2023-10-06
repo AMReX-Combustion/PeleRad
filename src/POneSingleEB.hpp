@@ -24,6 +24,8 @@ public:
     amrex::BoxArray const& grids_;
     amrex::DistributionMapping const& dmap_;
 
+    std::unique_ptr<amrex::EBFArrayBoxFactory> const& factory_;
+
     amrex::MultiFab& solution_;
     amrex::MultiFab const& rhs_;
     amrex::MultiFab const& acoef_;
@@ -35,8 +37,6 @@ public:
 
     amrex::Real const ascalar = 1.0;
     amrex::Real const bscalar = 1.0 / 3.0;
-
-    std::unique_ptr<amrex::EBFArrayBoxFactory> const& factory_;
 
     // constructor
     POneSingleEB(MLMGParam const& mlmgpp, amrex::Geometry const& geom,

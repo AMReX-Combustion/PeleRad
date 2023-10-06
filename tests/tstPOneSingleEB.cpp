@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     factory = std::make_unique<amrex::EBFArrayBoxFactory>(eb_level, geom, grids,
         dmap, amrex::Vector<int> { 2, 2, 2 }, amrex::EBSupport::full);
 
-    solution.define(grids, dmap, 1, 1, amrex::MFInfo(), *factory);
+    solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     exact_solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     rhs.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     acoef.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
