@@ -31,14 +31,14 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
     amrex::Real cospioverfour = std::cos(pioverfour);
     amrex::Real sinpioverfour = std::sin(pioverfour);
 
-    bx(i, j, k) = 1.0;
-    by(i, j, k) = 1.0;
-    bz(i, j, k) = 1.0;
-
-    phi(i, j, k) = 0.0;
-
     if (vbx.contains(i, j, k))
     {
+        bx(i, j, k) = 1.0;
+        by(i, j, k) = 1.0;
+        bz(i, j, k) = 1.0;
+
+        phi(i, j, k) = 0.0;
+
         if (flag(i, j, k).isCovered())
         {
             rhs(i, j, k)       = 0.0;
@@ -118,6 +118,7 @@ void initProbABecLaplacian(amrex::Geometry& geom,
             //     = cent.const_array(mfi);
             // amrex::Array4<amrex::Real const> const& bcent_arr
             //     = bcent.const_array(mfi);
+
             amrex::ParallelFor(nbx,
                 [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
                 {
@@ -127,76 +128,6 @@ void initProbABecLaplacian(amrex::Geometry& geom,
         }
     }
 }
-
-/*
-void initMeshandData(PeleRad::AMRParam const& amrpp,
-    PeleRad::MLMGParam const& mlmgpp, amrex::Geometry& geom,
-    amrex::BoxArray& grids, amrex::DistributionMapping& dmap,
-    std::unique_ptr<amrex::EBFArrayBoxFactory>& factory,
-    amrex::MultiFab& solution, amrex::MultiFab& rhs,
-    amrex::MultiFab& exact_solution, amrex::MultiFab& acoef,
-    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& bcoef)
-{
-    int const n_cell        = amrpp.n_cell_;
-    int const max_grid_size = amrpp.max_grid_size_;
-
-    amrex::RealBox rb(
-        { AMREX_D_DECL(-1.0, -1.0, -1.0) }, { AMREX_D_DECL(1.0, 1.0, 1.0) });
-    amrex::Array<int, AMREX_SPACEDIM> is_periodic { AMREX_D_DECL(1, 1, 1) };
-    amrex::Geometry::Setup(&rb, 0, is_periodic.data());
-    amrex::Box domain0(amrex::IntVect { AMREX_D_DECL(0, 0, 0) },
-        amrex::IntVect { AMREX_D_DECL(n_cell - 1, n_cell - 1, n_cell - 1) });
-    //    geom.define(domain0);
-    geom.define(domain0, rb, amrex::CoordSys::cartesian, is_periodic);
-
-    grids.define(domain0);
-    grids.maxSize(max_grid_size);
-
-    // rotated box
-    int const max_coarsening_level = mlmgpp.max_coarsening_level_;
-    double const la                = std::sqrt(2.0) / 2.0;
-    amrex::EB2::BoxIF box({ AMREX_D_DECL(-la, -la, -la * 0.75) },
-        { AMREX_D_DECL(la, la, la * 1.25) }, true);
-    auto gshop = amrex::EB2::makeShop(amrex::EB2::translate(
-        amrex::EB2::rotate(
-            amrex::EB2::translate(box, { AMREX_D_DECL(-0.0, -0.0, -0.0) }),
-            std::atan(1.0) * 1.0, 2),
-        { AMREX_D_DECL(0.0, 0.0, 0.0) }));
-    amrex::EB2::Build(gshop, geom, 0, max_coarsening_level);
-
-    amrex::IntVect ng = amrex::IntVect { 1 };
-
-    dmap.define(grids);
-
-    amrex::EB2::IndexSpace const& eb_is = amrex::EB2::IndexSpace::top();
-    amrex::EB2::Level const& eb_level   = eb_is.getLevel(geom);
-    factory = std::make_unique<amrex::EBFArrayBoxFactory>(eb_level, geom, grids,
-        dmap, amrex::Vector<int> { 2, 2, 2 }, amrex::EBSupport::full);
-
-    solution.define(grids, dmap, 1, 1, amrex::MFInfo(), *factory);
-    exact_solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
-    rhs.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
-    acoef.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
-
-    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-    {
-        bcoef[idim].define(
-            amrex::convert(grids, amrex::IntVect::TheDimensionVector(idim)),
-            dmap, 1, 0, amrex::MFInfo(), *factory);
-    }
-
-    solution.setVal(0.0);
-    rhs.setVal(0.0);
-    acoef.setVal(1.0);
-    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-    {
-        bcoef[idim].setVal(1.0);
-    }
-
-    initProbABecLaplacian(
-        geom, factory, solution, rhs, exact_solution, acoef, bcoef);
-}
-*/
 
 double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact)
 {
