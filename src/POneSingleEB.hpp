@@ -29,7 +29,7 @@ public:
     amrex::MultiFab& solution_;
     amrex::MultiFab const& rhs_;
     amrex::MultiFab const& acoef_;
-    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& bcoef_;
+    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> const& bcoef_;
 
     amrex::MultiFab const& robin_a_;
     amrex::MultiFab const& robin_b_;
@@ -44,7 +44,7 @@ public:
         std::unique_ptr<amrex::EBFArrayBoxFactory> const& factory,
         amrex::MultiFab& solution, amrex::MultiFab const& rhs,
         amrex::MultiFab const& acoef,
-        amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& bcoef,
+        amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> const& bcoef,
         amrex::MultiFab const& robin_a, amrex::MultiFab const& robin_b,
         amrex::MultiFab const& robin_f)
         : mlmgpp_(mlmgpp),
@@ -95,7 +95,7 @@ public:
 
         mlabec.setDomainBC(lobc, hibc);
 
-        //        mlabec.setLevelBC(0, &solution, &robin_a, &robin_b, &robin_f);
+        // mlabec.setLevelBC(0, &solution, &robin_a, &robin_b, &robin_f);
         mlabec.setLevelBC(0, nullptr);
 
         mlabec.setScalars(ascalar, bscalar);
@@ -125,7 +125,7 @@ public:
         //      mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(face_bcoef));
         mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(bcoef));
 
-        // this is the BCoef associated iwth an EB face
+        // this is the BCoef associated with an EB face
         amrex::MultiFab beta(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
         beta.setVal(1.0);
 
