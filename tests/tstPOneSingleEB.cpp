@@ -186,8 +186,9 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     // rotated box
     int const max_coarsening_level = mlmgpp.max_coarsening_level_;
     double const la                = std::sqrt(2.0) / 2.0;
-    amrex::EB2::BoxIF box({ AMREX_D_DECL(-la, -la, -la * 0.75) },
-        { AMREX_D_DECL(la, la, la * 1.25) }, true);
+    double const shift             = 4.0 * std::sqrt(2.0) / 3.0;
+    amrex::EB2::BoxIF box({ AMREX_D_DECL(-la, -la, -1.0) },
+        { AMREX_D_DECL(la, la, -1.0 + shift) }, true);
     auto gshop = amrex::EB2::makeShop(amrex::EB2::translate(
         amrex::EB2::rotate(
             amrex::EB2::translate(box, { AMREX_D_DECL(-0.0, -0.0, -0.0) }),
