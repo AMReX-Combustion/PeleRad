@@ -32,6 +32,12 @@ public:
     PlanckMean(std::string data_path) { load(data_path); }
 
     AMREX_GPU_HOST
+    PlanckMean(PlanckMean const&) = delete;
+
+    AMREX_GPU_HOST
+    PlanckMean& operator=(PlanckMean const&) = delete;
+
+    AMREX_GPU_HOST
     void load(std::string data_path)
     {
 #ifdef PELERAD_USE_HIP

@@ -37,6 +37,12 @@ target_include_directories(PeleRad_POneSingleEB.exe PUBLIC ${AMREX_HOME_DIR}/Src
 target_link_libraries(PeleRad_POneSingleEB.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingleEB.exe PRIVATE BOOST_TEST_DYN_LINK)
 add_test(NAME PeleRad_POneSingleEB_Test COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneSingleEB.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingleEB")
+
+add_executable(PeleRad_POneMultiEB.exe tstPOneMultiEB.cpp ut_main.cpp)
+target_include_directories(PeleRad_POneMultiEB.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG ${AMREX_HOME_DIR}/Src/EB)
+target_link_libraries(PeleRad_POneMultiEB.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
+target_compile_definitions(PeleRad_POneMultiEB.exe PRIVATE BOOST_TEST_DYN_LINK)
+add_test(NAME PeleRad_POneMultiEB_Test COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./PeleRad_POneMultiEB.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiEB")
 endif()
 
 add_executable(PeleRad_POneMulti.exe tstPOneMulti.cpp ut_main.cpp)
@@ -78,6 +84,12 @@ target_include_directories(PeleRad_POneSingleEB.exe PUBLIC ${AMREX_HOME_DIR}/Src
 target_link_libraries(PeleRad_POneSingleEB.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
 target_compile_definitions(PeleRad_POneSingleEB.exe PRIVATE BOOST_TEST_DYN_LINK)
 add_test(NAME PeleRad_POneSingleEB_Test COMMAND ./PeleRad_POneSingleEB.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneSingleEB" )
+
+add_executable(PeleRad_POneMultiEB.exe tstPOneMultiEB.cpp ut_main.cpp)
+target_include_directories(PeleRad_POneMultiEB.exe PUBLIC ${AMREX_HOME_DIR}/Src/Base ${AMREX_HOME_DIR}/Src/LinearSolvers/MLMG ${AMREX_HOME_DIR}/Src/EB)
+target_link_libraries(PeleRad_POneMultiEB.exe PRIVATE PeleRad Boost::unit_test_framework amrex)
+target_compile_definitions(PeleRad_POneMultiEB.exe PRIVATE BOOST_TEST_DYN_LINK)
+add_test(NAME PeleRad_POneMultiEB_Test COMMAND ./PeleRad_POneMultiEB.exe "${CMAKE_SOURCE_DIR}/inputs/inputs.tstPOneMultiEB")
 endif()
 
 add_executable(PeleRad_POneMulti.exe tstPOneMulti.cpp ut_main.cpp)
@@ -107,6 +119,7 @@ setup_target_for_cuda_compilation(PeleRad_BoostReadDatabase.exe)
 setup_target_for_cuda_compilation(PeleRad_AmrexGetRadProp.exe)
 setup_target_for_cuda_compilation(PeleRad_POneSingle.exe)
 setup_target_for_cuda_compilation(PeleRad_POneSingleEB.exe)
+setup_target_for_cuda_compilation(PeleRad_POneMultiEB.exe)
 setup_target_for_cuda_compilation(PeleRad_POneMulti.exe)
 setup_target_for_cuda_compilation(PeleRad_POneSingleAF.exe)
 setup_target_for_cuda_compilation(PeleRad_POneMultiAF.exe)
