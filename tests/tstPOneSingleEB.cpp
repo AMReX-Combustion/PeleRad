@@ -48,8 +48,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
         {
             amrex::Real x = dx[0] * (i + 0.5) - 0.5;
             amrex::Real y = dx[1] * (j + 0.5) - 0.5;
-            amrex::Real z = dx[2] * (k + 0.5) - 0.5;
+            amrex::Real z = dx[2] * k;
 
+            // rotation
             amrex::Real xp = x * cospioverfour + y * sinpioverfour;
             amrex::Real yp = -x * sinpioverfour + y * cospioverfour;
 
@@ -129,12 +130,14 @@ void initProbABecLaplacian(amrex::Geometry& geom,
     }
 }
 
-double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact)
+double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact,
+    amrex::MultiFab const& vfrc)
 {
     amrex::MultiFab mf(phi.boxArray(), phi.DistributionMap(), 1, 0);
     amrex::MultiFab::Copy(mf, phi, 0, 0, 1, 0);
 
     amrex::MultiFab::Subtract(mf, exact, 0, 0, 1, 0);
+    amrex::MultiFab::Multiply(mf, vfrc, 0, 0, 1, 0);
 
     double L0norm = mf.norm0();
     double L1norm = mf.norm1();
@@ -186,9 +189,9 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     // rotated box
     int const max_coarsening_level = mlmgpp.max_coarsening_level_;
     double const la                = std::sqrt(2.0) / 2.0;
-    double const shift             = 4.0 * std::sqrt(2.0) / 3.0;
+    double const shift             = std::sqrt(2.0) / 3.0;
     amrex::EB2::BoxIF box({ AMREX_D_DECL(-la, -la, -1.0) },
-        { AMREX_D_DECL(la, la, -1.0 + shift) }, true);
+        { AMREX_D_DECL(la, la, -1 + 4.0 * shift) }, true);
     auto gshop = amrex::EB2::makeShop(amrex::EB2::translate(
         amrex::EB2::rotate(
             amrex::EB2::translate(box, { AMREX_D_DECL(-0.0, -0.0, -0.0) }),
@@ -204,6 +207,8 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     amrex::EB2::Level const& eb_level   = eb_is.getLevel(geom);
     factory = std::make_unique<amrex::EBFArrayBoxFactory>(eb_level, geom, grids,
         dmap, amrex::Vector<int> { 2, 2, 2 }, amrex::EBSupport::full);
+
+    amrex::MultiFab const& vfrc = factory->getVolFrac();
 
     solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     exact_solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
@@ -240,7 +245,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     // std::cout << "solve the PDE ... \n";
     rte.solve();
 
-    auto eps = check_norm(solution, exact_solution);
+    auto eps = check_norm(solution, exact_solution, vfrc);
     eps /= static_cast<double>(n_cell * n_cell * n_cell);
     std::cout << "n_cell=" << n_cell << ", normalized L1 norm:" << eps
               << std::endl;
@@ -249,7 +254,6 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     if (write)
     {
         std::cout << "write the results ... \n";
-        amrex::MultiFab const& vfrc = factory->getVolFrac();
         amrex::MultiFab plotmf(grids, dmap, 8, 0);
         amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
         amrex::MultiFab::Copy(plotmf, exact_solution, 0, 1, 1, 0);
@@ -276,5 +280,5 @@ BOOST_AUTO_TEST_CASE(p1_eb)
         */
     }
 
-    BOOST_TEST(eps < 1e-2);
+    BOOST_TEST(eps < 5e-3);
 }

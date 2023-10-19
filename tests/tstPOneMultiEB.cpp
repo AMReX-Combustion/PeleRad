@@ -48,7 +48,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
         {
             amrex::Real x = dx[0] * (i + 0.5) - 0.5;
             amrex::Real y = dx[1] * (j + 0.5) - 0.5;
-            amrex::Real z = dx[2] * (k + 0.5) - 0.5;
+            amrex::Real z = dx[2] * k;
 
             amrex::Real xp = x * cospioverfour + y * sinpioverfour;
             amrex::Real yp = -x * sinpioverfour + y * cospioverfour;
@@ -132,12 +132,14 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
     }
 }
 
-double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact)
+double check_norm(amrex::MultiFab const& phi, amrex::MultiFab const& exact,
+    amrex::MultiFab const& vfrc)
 {
     amrex::MultiFab mf(phi.boxArray(), phi.DistributionMap(), 1, 0);
     amrex::MultiFab::Copy(mf, phi, 0, 0, 1, 0);
 
     amrex::MultiFab::Subtract(mf, exact, 0, 0, 1, 0);
+    amrex::MultiFab::Multiply(mf, vfrc, 0, 0, 1, 0);
 
     double L0norm = mf.norm0();
     double L1norm = mf.norm1();
@@ -199,9 +201,9 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
     // rotated box
     int const max_coarsening_level = mlmgpp.max_coarsening_level_;
     double const la                = std::sqrt(2.0) / 2.0;
-    double const shift             = 4.0 * std::sqrt(2.0) / 3.0;
+    double const shift             = std::sqrt(2.0) / 3.0;
     amrex::EB2::BoxIF box({ AMREX_D_DECL(-la, -la, -1.0) },
-        { AMREX_D_DECL(la, la, -1.0 + shift) }, true);
+        { AMREX_D_DECL(la, la, -1.0 + 4.0 * shift) }, true);
     auto gshop = amrex::EB2::makeShop(amrex::EB2::translate(
         amrex::EB2::rotate(
             amrex::EB2::translate(box, { AMREX_D_DECL(-0.0, -0.0, -0.0) }),
@@ -289,10 +291,11 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
     double eps_max = 0.0;
     for (int ilev = 0; ilev < nlevels; ++ilev)
     {
+        auto const& vfrc = factory[ilev]->getVolFrac();
         auto dx          = geom[ilev].CellSize();
         amrex::Real dvol = AMREX_D_TERM(dx[0], *dx[1], *dx[2]);
-        eps              = check_norm(solution[ilev], exact_solution[ilev]);
-        eps *= dvol;
+        eps = check_norm(solution[ilev], exact_solution[ilev], vfrc);
+        eps *= dvol / 8.0; // total volume/cell volume
         std::cout << "Level=" << ilev << ", normalized L1 norm:" << eps
                   << std::endl;
         if (eps > eps_max) eps_max = eps;
@@ -302,10 +305,10 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
     if (write)
     {
         amrex::Vector<amrex::MultiFab> plotmf(nlevels);
+        std::cout << "write the results ... \n";
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
-            std::cout << "write the results ... \n";
-            amrex::MultiFab const& vfrc = factory[ilev]->getVolFrac();
+            auto const& vfrc = factory[ilev]->getVolFrac();
             plotmf[ilev].define(grids[ilev], dmap[ilev], 8, 0);
             amrex::MultiFab::Copy(plotmf[ilev], solution[ilev], 0, 0, 1, 0);
             amrex::MultiFab::Copy(
@@ -336,5 +339,5 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
         */
     }
 
-    BOOST_TEST(eps < 5e-2);
+    BOOST_TEST(eps < 1e-2);
 }
