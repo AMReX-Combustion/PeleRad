@@ -4,7 +4,13 @@
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
+
+#ifdef PELELM_USE_EB
+#include <POneMultiEB.hpp>
+#else
 #include <POneMulti.hpp>
+#endif
+
 #include <POneMultiLevbyLev.hpp>
 #include <PlanckMean.hpp>
 #include <SpectralModels.hpp>
@@ -39,22 +45,39 @@ private:
 
     bool composite_solve_;
 
+#ifdef PELELM_USE_EB
+    std::unique_ptr<POneMultiEB> rte_;
+#else
     std::unique_ptr<POneMulti> rte_;
+#endif
 
     std::unique_ptr<POneMultiLevbyLev> rtelevbylev_;
+
+#ifdef PELELM_USE_EB
+    amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>> const& factory_;
+#endif
 
 public:
     AMREX_GPU_HOST
     Radiation(amrex::Vector<amrex::Geometry>& geom,
         amrex::Vector<amrex::BoxArray>& grids,
         amrex::Vector<amrex::DistributionMapping>& dmap, RadComps rc,
-        amrex::ParmParse const& mlmgpp, int const& ref_ratio)
+        amrex::ParmParse const& mlmgpp, int const& ref_ratio
+#ifdef PELELM_USE_EB
+        ,
+        amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>> const& factory
+#endif
+        )
         : geom_(geom),
           grids_(grids),
           dmap_(dmap),
           rc_(rc),
           mlmgpp_(mlmgpp),
           ref_ratio_(ref_ratio)
+#ifdef PELELM_USE_EB
+          ,
+          factory_(factory)
+#endif
     {
         if (amrex::ParallelDescriptor::IOProcessor()) rc_.checkIndices();
 
@@ -76,8 +99,15 @@ public:
 
         if (composite_solve_)
         {
+
+#ifdef PELELM_USE_EB
+            rte_ = std::make_unique<POneMultiEB>(mlmgpp_, geom_, grids_, dmap_,
+                solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_,
+                factory_);
+#else
             rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
                 solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_);
+#endif
         }
         else
         {
