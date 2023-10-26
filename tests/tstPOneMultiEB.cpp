@@ -17,8 +17,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
     amrex::Array4<amrex::Real> const& phi_exact,
     amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& acoef,
-    amrex::Array4<amrex::Real> const& bx, amrex::Array4<amrex::Real> const& by,
-    amrex::Array4<amrex::Real> const& bz,
+    amrex::Array4<amrex::Real> const& bx,
     amrex::Array4<amrex::EBCellFlag const> const& flag,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
     amrex::Box const& vbx)
@@ -33,10 +32,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
 
     if (vbx.contains(i, j, k))
     {
-        bx(i, j, k) = 1.0;
-        by(i, j, k) = 1.0;
-        bz(i, j, k) = 1.0;
-
+        bx(i, j, k)  = 1.0;
         phi(i, j, k) = 0.0;
 
         if (flag(i, j, k).isCovered())
@@ -71,7 +67,7 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
     amrex::Vector<amrex::MultiFab>& rhs,
     amrex::Vector<amrex::MultiFab>& exact_solution,
     amrex::Vector<amrex::MultiFab>& acoef,
-    amrex::Vector<amrex::Array<amrex::MultiFab, 3>>& bcoef)
+    amrex::Vector<amrex::MultiFab>& bcoef)
 {
     int const nlevels = geom.size();
     for (int ilev = 0; ilev < nlevels; ++ilev)
@@ -92,12 +88,7 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
                 = exact_solution[ilev].array(mfi);
             amrex::Array4<amrex::Real> const& rhs_arr = rhs[ilev].array(mfi);
 
-            amrex::Array4<amrex::Real> const& bx_arr
-                = bcoef[ilev][0].array(mfi);
-            amrex::Array4<amrex::Real> const& by_arr
-                = bcoef[ilev][1].array(mfi);
-            amrex::Array4<amrex::Real> const& bz_arr
-                = bcoef[ilev][2].array(mfi);
+            amrex::Array4<amrex::Real> const& b_arr = bcoef[ilev].array(mfi);
 
             auto fabtyp = flags[mfi].getType(bx);
             if (fabtyp == amrex::FabType::covered)
@@ -124,8 +115,7 @@ void initProbABecLaplacian(amrex::Vector<amrex::Geometry>& geom,
                     [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
                     {
                         actual_init_coefs_eb(i, j, k, phi_arr, phi_ex_arr,
-                            rhs_arr, acoef_arr, bx_arr, by_arr, bz_arr,
-                            flag_arr, dx, bx);
+                            rhs_arr, acoef_arr, b_arr, flag_arr, dx, bx);
                     });
             }
         }
@@ -154,7 +144,7 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write          = true;
+    bool const write          = false;
     int const n_cell          = amrpp.n_cell_;
     int const nlevels         = amrpp.max_level_ + 1;
     int const max_level       = amrpp.max_level_;
@@ -172,7 +162,7 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
     amrex::Vector<amrex::MultiFab> exact_solution;
 
     amrex::Vector<amrex::MultiFab> acoef;
-    amrex::Vector<amrex::Array<amrex::MultiFab, 3>> bcoef;
+    amrex::Vector<amrex::MultiFab> bcoef;
     amrex::Vector<amrex::MultiFab> robin_a;
     amrex::Vector<amrex::MultiFab> robin_b;
     amrex::Vector<amrex::MultiFab> robin_f;
@@ -254,35 +244,36 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
             grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
         acoef[ilev].define(
             grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
-
-        for (int idim = 0; idim < 3; ++idim)
-        {
-            bcoef[ilev][idim].define(
-                amrex::convert(
-                    grids[ilev], amrex::IntVect::TheDimensionVector(idim)),
-                dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
-        }
+        bcoef[ilev].define(
+            grids[ilev], dmap[ilev], 1, 1, amrex::MFInfo(), *factory[ilev]);
+        robin_a[ilev].define(
+            grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
+        robin_b[ilev].define(
+            grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
+        robin_f[ilev].define(
+            grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
 
         solution[ilev].setVal(0.0);
         rhs[ilev].setVal(0.0);
         acoef[ilev].setVal(1.0);
-        for (int idim = 0; idim < 3; ++idim)
-        {
-            bcoef[ilev][idim].setVal(1.0);
-        }
+        bcoef[ilev].setVal(1.0);
+        robin_a[ilev].setVal(0.0);
+        robin_b[ilev].setVal(0.0);
+        robin_f[ilev].setVal(0.0);
     }
 
     initProbABecLaplacian(
         geom, factory, solution, rhs, exact_solution, acoef, bcoef);
 
-    //     std::cout << "initialize data ... \n";
-    //    initMeshandData(amrpp, mlmgpp, geom, grids, dmap, factory,
-    //    solution, rhs,
-    //        exact_solution, acoef, bcoef);
-
+    // Get vector of EB factory
     std::cout << "construct the PDE ... \n";
-    PeleRad::POneMultiEB rte(mlmgpp, geom, grids, dmap, factory, solution, rhs,
-        acoef, bcoef, robin_a, robin_b, robin_f);
+    amrex::Vector<amrex::EBFArrayBoxFactory const*> ebfactVec;
+    for (int ilev = 0; ilev < nlevels; ++ilev)
+    {
+        ebfactVec.push_back(factory[ilev].get());
+    }
+    PeleRad::POneMultiEB rte(mlmgpp, geom, grids, dmap, ebfactVec, solution,
+        rhs, acoef, bcoef, robin_a, robin_b, robin_f);
 
     std::cout << "solve the PDE ... \n";
     rte.solve();
@@ -309,23 +300,20 @@ BOOST_AUTO_TEST_CASE(p1_multi_eb)
         for (int ilev = 0; ilev < nlevels; ++ilev)
         {
             auto const& vfrc = factory[ilev]->getVolFrac();
-            plotmf[ilev].define(grids[ilev], dmap[ilev], 8, 0);
+            plotmf[ilev].define(grids[ilev], dmap[ilev], 6, 0);
             amrex::MultiFab::Copy(plotmf[ilev], solution[ilev], 0, 0, 1, 0);
             amrex::MultiFab::Copy(
                 plotmf[ilev], exact_solution[ilev], 0, 1, 1, 0);
             amrex::MultiFab::Copy(plotmf[ilev], rhs[ilev], 0, 2, 1, 0);
             amrex::MultiFab::Copy(plotmf[ilev], acoef[ilev], 0, 3, 1, 0);
-            amrex::MultiFab::Copy(plotmf[ilev], bcoef[ilev][0], 0, 4, 1, 0);
-            amrex::MultiFab::Copy(plotmf[ilev], bcoef[ilev][1], 0, 5, 1, 0);
-            amrex::MultiFab::Copy(plotmf[ilev], bcoef[ilev][2], 0, 6, 1, 0);
-            amrex::MultiFab::Copy(plotmf[ilev], vfrc, 0, 7, 1, 0);
+            amrex::MultiFab::Copy(plotmf[ilev], bcoef[ilev], 0, 4, 1, 0);
+            amrex::MultiFab::Copy(plotmf[ilev], vfrc, 0, 5, 1, 0);
         }
         auto const plot_file_name = amrpp.plot_file_name_;
         amrex::WriteMultiLevelPlotfile(plot_file_name, nlevels,
             amrex::GetVecOfConstPtrs(plotmf),
-            { "phi", "exact", "rhs", "acoef", "bcoefx", "bcoefy", "bcoefz",
-                "vfrac" },
-            geom, 0.0, amrex::Vector<int>(nlevels, 0),
+            { "phi", "exact", "rhs", "acoef", "bcoef", "vfrac" }, geom, 0.0,
+            amrex::Vector<int>(nlevels, 0),
             amrex::Vector<amrex::IntVect>(
                 nlevels, amrex::IntVect { ref_ratio }));
 

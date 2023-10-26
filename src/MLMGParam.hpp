@@ -34,6 +34,28 @@ public:
     std::string kppath_;
 
     AMREX_GPU_HOST
+    MLMGParam()
+        : verbose_(0),
+          bottom_verbose_(0),
+          max_iter_(50),
+          max_bottom_iter_(20),
+          reltol_(1.e-4),
+          abstol_(1.e-4),
+          bottom_reltol_(1.e-5),
+          bottom_abstol_(1.e-5),
+          linop_maxorder_(3),
+          max_coarsening_level_(20),
+          agg_grid_size_(-1),
+          con_grid_size_(-1),
+          agglomeration_(0),
+          consolidation_(1),
+          composite_solve_(1),
+          fine_level_solve_only_(0),
+          use_hypre_(0)
+    {
+    }
+
+    AMREX_GPU_HOST
     MLMGParam(const amrex::ParmParse& pp) : pp_(pp)
     {
         pp_.query("kppath", kppath_);

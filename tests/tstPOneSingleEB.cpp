@@ -17,8 +17,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
     amrex::Array4<amrex::Real> const& phi_exact,
     amrex::Array4<amrex::Real> const& rhs,
     amrex::Array4<amrex::Real> const& acoef,
-    amrex::Array4<amrex::Real> const& bx, amrex::Array4<amrex::Real> const& by,
-    amrex::Array4<amrex::Real> const& bz,
+    amrex::Array4<amrex::Real> const& bx,
     amrex::Array4<amrex::EBCellFlag const> const& flag,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
     amrex::Box const& vbx)
@@ -33,10 +32,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE void actual_init_coefs_eb(int i, int j,
 
     if (vbx.contains(i, j, k))
     {
-        bx(i, j, k) = 1.0;
-        by(i, j, k) = 1.0;
-        bz(i, j, k) = 1.0;
-
+        bx(i, j, k)  = 1.0;
         phi(i, j, k) = 0.0;
 
         if (flag(i, j, k).isCovered())
@@ -70,19 +66,14 @@ void initProbABecLaplacian(amrex::Geometry& geom,
     std::unique_ptr<amrex::EBFArrayBoxFactory>& factory,
     amrex::MultiFab& solution, amrex::MultiFab& rhs,
     amrex::MultiFab& exact_solution, amrex::MultiFab& acoef,
-    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>& bcoef)
+    amrex::MultiFab& bcoef)
 {
 
     amrex::FabArray<amrex::EBCellFlagFab> const& flags
         = factory->getMultiEBCellFlagFab();
     //    amrex::MultiCutFab const& bcent = factory->getBndryCent();
     //    amrex::MultiCutFab const& cent  = factory->getCentroid();
-    /*
-            auto const prob_lo = geom.ProbLoArray();
-            auto const prob_hi = geom.ProbHiArray();
-            auto const dlo     = amrex::lbound(geom.Domain());
-            auto const dhi     = amrex::ubound(geom.Domain());
-    */
+
     auto const dx               = geom.CellSizeArray();
     amrex::Box const& domainbox = geom.Domain();
 
@@ -96,9 +87,7 @@ void initProbABecLaplacian(amrex::Geometry& geom,
             = exact_solution.array(mfi);
         amrex::Array4<amrex::Real> const& rhs_arr = rhs.array(mfi);
 
-        amrex::Array4<amrex::Real> const& bx_arr = bcoef[0].array(mfi);
-        amrex::Array4<amrex::Real> const& by_arr = bcoef[1].array(mfi);
-        amrex::Array4<amrex::Real> const& bz_arr = bcoef[2].array(mfi);
+        amrex::Array4<amrex::Real> const& bx_arr = bcoef.array(mfi);
 
         auto fabtyp = flags[mfi].getType(bx);
         if (fabtyp == amrex::FabType::covered)
@@ -124,7 +113,7 @@ void initProbABecLaplacian(amrex::Geometry& geom,
                 [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept
                 {
                     actual_init_coefs_eb(i, j, k, phi_arr, phi_ex_arr, rhs_arr,
-                        acoef_arr, bx_arr, by_arr, bz_arr, flag_arr, dx, bx);
+                        acoef_arr, bx_arr, flag_arr, dx, bx);
                 });
         }
     }
@@ -152,7 +141,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     PeleRad::AMRParam amrpp(pp);
     PeleRad::MLMGParam mlmgpp(pp);
 
-    bool const write = true;
+    bool const write = false;
     int const n_cell = amrpp.n_cell_;
 
     amrex::Geometry geom;
@@ -163,8 +152,7 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     amrex::MultiFab exact_solution;
     amrex::MultiFab rhs;
     amrex::MultiFab acoef;
-    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> bcoef;
-    amrex::MultiFab bcoef_eb;
+    amrex::MultiFab bcoef;
 
     amrex::MultiFab robin_a;
     amrex::MultiFab robin_b;
@@ -210,25 +198,22 @@ BOOST_AUTO_TEST_CASE(p1_eb)
 
     amrex::MultiFab const& vfrc = factory->getVolFrac();
 
-    solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
+    solution.define(grids, dmap, 1, 1, amrex::MFInfo(), *factory);
     exact_solution.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     rhs.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
     acoef.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
-
-    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-    {
-        bcoef[idim].define(
-            amrex::convert(grids, amrex::IntVect::TheDimensionVector(idim)),
-            dmap, 1, 0, amrex::MFInfo(), *factory);
-    }
+    bcoef.define(grids, dmap, 1, 1, amrex::MFInfo(), *factory);
+    robin_a.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
+    robin_b.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
+    robin_f.define(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
 
     solution.setVal(0.0);
     rhs.setVal(0.0);
     acoef.setVal(1.0);
-    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-    {
-        bcoef[idim].setVal(1.0);
-    }
+    bcoef.setVal(1.0);
+    robin_a.setVal(0.0);
+    robin_b.setVal(0.0);
+    robin_f.setVal(0.0);
 
     initProbABecLaplacian(
         geom, factory, solution, rhs, exact_solution, acoef, bcoef);
@@ -254,21 +239,18 @@ BOOST_AUTO_TEST_CASE(p1_eb)
     if (write)
     {
         std::cout << "write the results ... \n";
-        amrex::MultiFab plotmf(grids, dmap, 8, 0);
+        amrex::MultiFab plotmf(grids, dmap, 6, 0);
         amrex::MultiFab::Copy(plotmf, solution, 0, 0, 1, 0);
         amrex::MultiFab::Copy(plotmf, exact_solution, 0, 1, 1, 0);
         amrex::MultiFab::Copy(plotmf, rhs, 0, 2, 1, 0);
         amrex::MultiFab::Copy(plotmf, acoef, 0, 3, 1, 0);
-        amrex::MultiFab::Copy(plotmf, bcoef[0], 0, 4, 1, 0);
-        amrex::MultiFab::Copy(plotmf, bcoef[1], 0, 5, 1, 0);
-        amrex::MultiFab::Copy(plotmf, bcoef[2], 0, 6, 1, 0);
-        amrex::MultiFab::Copy(plotmf, vfrc, 0, 7, 1, 0);
+        amrex::MultiFab::Copy(plotmf, bcoef, 0, 4, 1, 0);
+        amrex::MultiFab::Copy(plotmf, vfrc, 0, 5, 1, 0);
 
         auto const plot_file_name = amrpp.plot_file_name_;
         amrex::WriteSingleLevelPlotfile(plot_file_name, plotmf,
-            { "phi", "exact", "rhs", "acoef", "bcoefx", "bcoefy", "bcoefz",
-                "vfrac" },
-            geom, 0.0, 0);
+            { "phi", "exact", "rhs", "acoef", "bcoefx", "vfrac" }, geom, 0.0,
+            0);
 
         // for amrvis
         /*

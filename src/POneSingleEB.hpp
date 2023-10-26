@@ -29,7 +29,7 @@ public:
     amrex::MultiFab& solution_;
     amrex::MultiFab const& rhs_;
     amrex::MultiFab const& acoef_;
-    amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> const& bcoef_;
+    amrex::MultiFab const& bcoef_;
 
     amrex::MultiFab const& robin_a_;
     amrex::MultiFab const& robin_b_;
@@ -43,8 +43,7 @@ public:
         amrex::BoxArray const& grids, amrex::DistributionMapping const& dmap,
         std::unique_ptr<amrex::EBFArrayBoxFactory> const& factory,
         amrex::MultiFab& solution, amrex::MultiFab const& rhs,
-        amrex::MultiFab const& acoef,
-        amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> const& bcoef,
+        amrex::MultiFab const& acoef, amrex::MultiFab const& bcoef,
         amrex::MultiFab const& robin_a, amrex::MultiFab const& robin_b,
         amrex::MultiFab const& robin_f)
         : mlmgpp_(mlmgpp),
@@ -84,7 +83,7 @@ public:
         auto& solution      = solution_;
         auto const& rhs     = rhs_;
         auto const& acoef   = acoef_;
-        auto& bcoef         = bcoef_;
+        auto const& bcoef   = bcoef_;
         auto const& robin_a = robin_a_;
         auto const& robin_b = robin_b_;
         auto const& robin_f = robin_f_;
@@ -95,35 +94,24 @@ public:
 
         mlabec.setDomainBC(lobc, hibc);
 
-        // mlabec.setLevelBC(0, &solution, &robin_a, &robin_b, &robin_f);
-        mlabec.setLevelBC(0, nullptr);
+        mlabec.setLevelBC(0, &solution, &robin_a, &robin_b, &robin_f);
 
         mlabec.setScalars(ascalar, bscalar);
 
         mlabec.setACoeffs(0, acoef);
 
-        //      amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> face_bcoef;
-        /*
-                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-                {
-                    bcoef[idim].define(
-                        amrex::convert(grids,
-           amrex::IntVect::TheDimensionVector(idim)), dmap, 1, 0,
-           amrex::MFInfo(), *factory);
+        amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> face_bcoef;
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+        {
+            amrex::BoxArray const& ba = amrex::convert(
+                bcoef.boxArray(), amrex::IntVect::TheDimensionVector(idim));
+            face_bcoef[idim].define(ba, bcoef.DistributionMap(), 1, 0);
+        }
 
-                                const amrex::BoxArray& ba = amrex::convert(
-                                    bcoef[idim].boxArray(),
-                       amrex::IntVect::TheDimensionVector(idim));
-                                face_bcoef[idim].define(ba,
-           bcoef.DistributionMap(), 1, 0);
+        amrex::average_cellcenter_to_face(
+            GetArrOfPtrs(face_bcoef), bcoef, geom);
 
-                }
-        */
-        //        amrex::average_cellcenter_to_face(
-        //            GetArrOfPtrs(face_bcoef), bcoef, geom);
-
-        //      mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(face_bcoef));
-        mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(bcoef));
+        mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(face_bcoef));
 
         // this is the BCoef associated with an EB face
         amrex::MultiFab beta(grids, dmap, 1, 0, amrex::MFInfo(), *factory);

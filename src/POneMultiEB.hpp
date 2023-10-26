@@ -24,12 +24,12 @@ public:
     amrex::Vector<amrex::BoxArray>& grids_;
     amrex::Vector<amrex::DistributionMapping>& dmap_;
 
-    amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>> const& factory_;
+    amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory_;
 
     amrex::Vector<amrex::MultiFab>& solution_;
     amrex::Vector<amrex::MultiFab> const& rhs_;
     amrex::Vector<amrex::MultiFab> const& acoef_;
-    amrex::Vector<amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>> const& bcoef_;
+    amrex::Vector<amrex::MultiFab> const& bcoef_;
 
     amrex::Vector<amrex::MultiFab> const& robin_a_;
     amrex::Vector<amrex::MultiFab> const& robin_b_;
@@ -38,20 +38,15 @@ public:
     amrex::Real const ascalar_ = 1.0;
     amrex::Real const bscalar_ = 1.0 / 3.0;
 
-    POneMultiEB() = delete;
-
-    POneMultiEB(POneMultiEB const&) = delete;
-
     // constructor
     POneMultiEB(MLMGParam const& mlmgpp, amrex::Vector<amrex::Geometry>& geom,
         amrex::Vector<amrex::BoxArray>& grids,
         amrex::Vector<amrex::DistributionMapping>& dmap,
-        amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>>& factory,
+        amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory,
         amrex::Vector<amrex::MultiFab>& solution,
         amrex::Vector<amrex::MultiFab> const& rhs,
         amrex::Vector<amrex::MultiFab> const& acoef,
-        amrex::Vector<amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>> const&
-            bcoef,
+        amrex::Vector<amrex::MultiFab> const& bcoef,
         amrex::Vector<amrex::MultiFab> const& robin_a,
         amrex::Vector<amrex::MultiFab> const& robin_b,
         amrex::Vector<amrex::MultiFab> const& robin_f)
@@ -85,8 +80,11 @@ public:
         auto const& lobc = mlmgpp_.lobc_;
         auto const& hibc = mlmgpp_.hibc_;
 
-        amrex::MLEBABecLap mlabec(
-            geom_, grids_, dmap_, info_, amrex::GetVecOfConstPtrs(factory_));
+        //        amrex::MLEBABecLap mlabec(
+        //            geom_, grids_, dmap_, info_,
+        //            amrex::GetVecOfConstPtrs(factory_));
+
+        amrex::MLEBABecLap mlabec(geom_, grids_, dmap_, info_, factory_);
 
         mlabec.setDomainBC(lobc, hibc);
         mlabec.setScalars(ascalar_, bscalar_);
@@ -121,28 +119,20 @@ public:
             auto const& robin_b = robin_b_[ilev];
             auto const& robin_f = robin_f_[ilev];
 
-            // mlabec.setLevelBC(ilev, &solution, &robin_a, &robin_b, &robin_f);
-            mlabec.setLevelBC(ilev, &solution);
+            mlabec.setLevelBC(ilev, &solution, &robin_a, &robin_b, &robin_f);
 
             mlabec.setACoeffs(ilev, acoef);
-            /*
-                        amrex::Array<amrex::MultiFab, AMREX_SPACEDIM>
-               face_bcoef; for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-                        {
-                            amrex::BoxArray const& ba = amrex::convert(
-                                bcoef.boxArray(),
-               amrex::IntVect::TheDimensionVector(idim));
-                            face_bcoef[idim].define(ba, bcoef.DistributionMap(),
-               1, 0);
-                        }
-                        amrex::average_cellcenter_to_face(
-                            GetArrOfPtrs(face_bcoef), bcoef, geom);
-                        mlabec.setBCoeffs(ilev,
-               amrex::GetArrOfConstPtrs(face_bcoef));
-                    }
-            */
 
-            mlabec.setBCoeffs(ilev, amrex::GetArrOfConstPtrs(bcoef));
+            amrex::Array<amrex::MultiFab, AMREX_SPACEDIM> face_bcoef;
+            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+            {
+                amrex::BoxArray const& ba = amrex::convert(
+                    bcoef.boxArray(), amrex::IntVect::TheDimensionVector(idim));
+                face_bcoef[idim].define(ba, bcoef.DistributionMap(), 1, 0);
+            }
+            amrex::average_cellcenter_to_face(
+                GetArrOfPtrs(face_bcoef), bcoef, geom);
+            mlabec.setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoef));
 
             amrex::MultiFab beta(grids_[ilev], dmap_[ilev], 1, 1,
                 amrex::MFInfo(), *factory_[ilev]);
