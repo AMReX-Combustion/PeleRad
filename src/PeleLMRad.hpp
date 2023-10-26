@@ -5,7 +5,7 @@
 #include <AMReX_PlotFileUtil.H>
 #include <Constants.hpp>
 
-#ifdef PELELM_USE_EB
+#ifdef AMREX_USE_EB
 #include <POneMultiEB.hpp>
 #else
 #include <POneMulti.hpp>
@@ -45,7 +45,7 @@ private:
 
     bool composite_solve_;
 
-#ifdef PELELM_USE_EB
+#ifdef AMREX_USE_EB
     std::unique_ptr<POneMultiEB> rte_;
 #else
     std::unique_ptr<POneMulti> rte_;
@@ -53,8 +53,8 @@ private:
 
     std::unique_ptr<POneMultiLevbyLev> rtelevbylev_;
 
-#ifdef PELELM_USE_EB
-    amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>> const& factory_;
+#ifdef AMREX_USE_EB
+    amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory_;
 #endif
 
 public:
@@ -63,9 +63,9 @@ public:
         amrex::Vector<amrex::BoxArray>& grids,
         amrex::Vector<amrex::DistributionMapping>& dmap, RadComps rc,
         amrex::ParmParse const& mlmgpp, int const& ref_ratio
-#ifdef PELELM_USE_EB
+#ifdef AMREX_USE_EB
         ,
-        amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory>> const& factory
+        amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory
 #endif
         )
         : geom_(geom),
@@ -74,7 +74,7 @@ public:
           rc_(rc),
           mlmgpp_(mlmgpp),
           ref_ratio_(ref_ratio)
-#ifdef PELELM_USE_EB
+#ifdef AMREX_USE_EB
           ,
           factory_(factory)
 #endif
@@ -86,7 +86,9 @@ public:
         solution_.resize(nlevels);
         rhs_.resize(nlevels);
         acoef_.resize(nlevels);
+
         bcoef_.resize(nlevels);
+
         robin_a_.resize(nlevels);
         robin_b_.resize(nlevels);
         robin_f_.resize(nlevels);
@@ -100,10 +102,10 @@ public:
         if (composite_solve_)
         {
 
-#ifdef PELELM_USE_EB
+#ifdef AMREX_USE_EB
             rte_ = std::make_unique<POneMultiEB>(mlmgpp_, geom_, grids_, dmap_,
-                solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_,
-                factory_);
+                factory_, solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_,
+                robin_f_);
 #else
             rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
                 solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_);
