@@ -24,7 +24,7 @@ public:
     amrex::BoxArray const& grids_;
     amrex::DistributionMapping const& dmap_;
 
-    std::unique_ptr<amrex::EBFArrayBoxFactory*> const& factory_;
+    std::unique_ptr<amrex::EBFArrayBoxFactory> const& factory_;
 
     amrex::MultiFab& solution_;
     amrex::MultiFab const& rhs_;
