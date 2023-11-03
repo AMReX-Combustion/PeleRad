@@ -31,6 +31,7 @@ public:
     bool use_hypre_;
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> lobc_;
     amrex::Array<amrex::LinOpBCType, AMREX_SPACEDIM> hibc_;
+    int ebbc_type_;
     std::string kppath_;
 
     AMREX_GPU_HOST
@@ -41,8 +42,8 @@ public:
           max_bottom_iter_(20),
           reltol_(1.e-4),
           abstol_(1.e-4),
-          bottom_reltol_(1.e-5),
-          bottom_abstol_(1.e-5),
+          bottom_reltol_(1.e-6),
+          bottom_abstol_(1.e-6),
           linop_maxorder_(3),
           max_coarsening_level_(20),
           agg_grid_size_(-1),
@@ -51,7 +52,8 @@ public:
           consolidation_(1),
           composite_solve_(1),
           fine_level_solve_only_(0),
-          use_hypre_(0)
+          use_hypre_(0),
+          ebbc_type_(2)
     {
     }
 
@@ -83,11 +85,13 @@ public:
         pp_.getarr("lo_bc", lo_bc_char_, 0, AMREX_SPACEDIM);
         pp_.getarr("hi_bc", hi_bc_char_, 0, AMREX_SPACEDIM);
 
-        std::map<std::string, amrex::LinOpBCType> bctype;
+        std::unordered_map<std::string, amrex::LinOpBCType> bctype;
         bctype["Dirichlet"] = amrex::LinOpBCType::Dirichlet;
         bctype["Periodic"]  = amrex::LinOpBCType::Periodic;
         bctype["Neumann"]   = amrex::LinOpBCType::Neumann;
         bctype["Robin"]     = amrex::LinOpBCType::Robin;
+
+        pp_.query("ebbc_type", ebbc_type_);
 
         amrex::Print() << "Define radiation BC:"
                        << "\n";

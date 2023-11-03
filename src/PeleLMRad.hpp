@@ -21,15 +21,17 @@ namespace PeleRad
 class Radiation
 {
 private:
-    MLMGParam mlmgpp_;
-
-    int ref_ratio_;
-
     PlanckMean radprop;
 
     amrex::Vector<amrex::Geometry>& geom_;
     amrex::Vector<amrex::BoxArray>& grids_;
     amrex::Vector<amrex::DistributionMapping>& dmap_;
+
+    RadComps rc_;
+
+    MLMGParam mlmgpp_;
+
+    int ref_ratio_;
 
     amrex::Vector<amrex::MultiFab> solution_;
     amrex::Vector<amrex::MultiFab> rhs_;
@@ -40,8 +42,6 @@ private:
     amrex::Vector<amrex::MultiFab> robin_f_;
 
     amrex::Vector<amrex::MultiFab> absc_;
-
-    RadComps rc_;
 
     bool composite_solve_;
 

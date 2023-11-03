@@ -113,11 +113,10 @@ public:
 
         mlabec.setBCoeffs(0, amrex::GetArrOfConstPtrs(face_bcoef));
 
-        // this is the BCoef associated with an EB face
-        amrex::MultiFab beta(grids, dmap, 1, 0, amrex::MFInfo(), *factory);
-        beta.setVal(1.0);
-
-        mlabec.setEBDirichlet(0, solution, beta);
+        if (mlmgpp_.ebbc_type_ == 1)
+        {
+            mlabec.setEBDirichlet(0, solution, 1.0);
+        }
 
         amrex::MLMG mlmg(mlabec);
         mlmg.setMaxIter(max_iter);
