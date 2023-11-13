@@ -24,12 +24,11 @@ if(PELERAD_ENABLE_CUDA)
       cmake_policy(SET CMP0104 OLD)
   endif()
   enable_language(CUDA)
-#  include(${AMREX_HOME_DIR}/Tools/CMake/AMReX_SetupCUDA.cmake)
 endif()
 
 if(PELERAD_ENABLE_HIP)
   add_definitions(-DPELERAD_USE_HIP=ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++fs")
 endif()
 
 target_include_directories(PeleRad INTERFACE

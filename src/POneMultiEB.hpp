@@ -134,11 +134,10 @@ public:
                 GetArrOfPtrs(face_bcoef), bcoef, geom);
             mlabec.setBCoeffs(ilev, amrex::GetArrOfConstPtrs(face_bcoef));
 
-            amrex::MultiFab beta(grids_[ilev], dmap_[ilev], 1, 1,
-                amrex::MFInfo(), *factory_[ilev]);
-            beta.setVal(1.0);
-
-            mlabec.setEBDirichlet(ilev, solution, beta);
+            if (mlmgpp_.ebbc_type_ == 1)
+            {
+                mlabec.setEBDirichlet(ilev, solution, 1.0);
+            }
         }
         auto const tol_rel = mlmgpp_.reltol_;
         auto const tol_abs = mlmgpp_.abstol_;

@@ -9,9 +9,9 @@
 #include <POneMultiEB.hpp>
 #else
 #include <POneMulti.hpp>
+// #include <POneMultiLevbyLev.hpp>
 #endif
 
-#include <POneMultiLevbyLev.hpp>
 #include <PlanckMean.hpp>
 #include <SpectralModels.hpp>
 
@@ -21,15 +21,15 @@ namespace PeleRad
 class Radiation
 {
 private:
-    MLMGParam mlmgpp_;
-
-    int ref_ratio_;
-
     PlanckMean radprop;
 
     amrex::Vector<amrex::Geometry>& geom_;
     amrex::Vector<amrex::BoxArray>& grids_;
     amrex::Vector<amrex::DistributionMapping>& dmap_;
+
+    RadComps rc_;
+
+    MLMGParam mlmgpp_;
 
     amrex::Vector<amrex::MultiFab> solution_;
     amrex::Vector<amrex::MultiFab> rhs_;
@@ -41,9 +41,7 @@ private:
 
     amrex::Vector<amrex::MultiFab> absc_;
 
-    RadComps rc_;
-
-    bool composite_solve_;
+    //    bool composite_solve_;
 
 #ifdef AMREX_USE_EB
     std::unique_ptr<POneMultiEB> rte_;
@@ -51,10 +49,10 @@ private:
     std::unique_ptr<POneMulti> rte_;
 #endif
 
-    std::unique_ptr<POneMultiLevbyLev> rtelevbylev_;
+    //    std::unique_ptr<POneMultiLevbyLev> rtelevbylev_;
 
 #ifdef AMREX_USE_EB
-    amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory_;
+    amrex::Vector<amrex::EBFArrayBoxFactory const*> ebfactVec_;
 #endif
 
 public:
@@ -62,22 +60,14 @@ public:
     Radiation(amrex::Vector<amrex::Geometry>& geom,
         amrex::Vector<amrex::BoxArray>& grids,
         amrex::Vector<amrex::DistributionMapping>& dmap, RadComps rc,
-        amrex::ParmParse const& mlmgpp, int const& ref_ratio
+        amrex::ParmParse const& mlmgpp
 #ifdef AMREX_USE_EB
         ,
-        amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory
+        amrex::Vector<
+            std::unique_ptr<amrex::FabFactory<amrex::FArrayBox>>> const& factory
 #endif
         )
-        : geom_(geom),
-          grids_(grids),
-          dmap_(dmap),
-          rc_(rc),
-          mlmgpp_(mlmgpp),
-          ref_ratio_(ref_ratio)
-#ifdef AMREX_USE_EB
-          ,
-          factory_(factory)
-#endif
+        : geom_(geom), grids_(grids), dmap_(dmap), rc_(rc), mlmgpp_(mlmgpp)
     {
         if (amrex::ParallelDescriptor::IOProcessor()) rc_.checkIndices();
 
@@ -86,7 +76,6 @@ public:
         solution_.resize(nlevels);
         rhs_.resize(nlevels);
         acoef_.resize(nlevels);
-
         bcoef_.resize(nlevels);
 
         robin_a_.resize(nlevels);
@@ -94,29 +83,42 @@ public:
         robin_f_.resize(nlevels);
         absc_.resize(nlevels);
 
+#ifdef AMREX_USE_EB
+        for (int ilev = 0; ilev < nlevels; ++ilev)
+        {
+            ebfactVec_.push_back(&(
+                static_cast<amrex::EBFArrayBoxFactory const&>(*factory[ilev])));
+        }
+
+        initVars(grids, dmap, ebfactVec_);
+#else
         initVars(grids, dmap);
+#endif
+
         loadSpecModel();
 
-        composite_solve_ = mlmgpp_.composite_solve_;
+        //        composite_solve_ = mlmgpp_.composite_solve_;
 
-        if (composite_solve_)
-        {
+        //        if (composite_solve_)
+        //        {
 
 #ifdef AMREX_USE_EB
-            rte_ = std::make_unique<POneMultiEB>(mlmgpp_, geom_, grids_, dmap_,
-                factory_, solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_,
-                robin_f_);
+        rte_ = std::make_unique<POneMultiEB>(mlmgpp_, geom_, grids_, dmap_,
+            ebfactVec_, solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_,
+            robin_f_);
 #else
-            rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
-                solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_);
+        rte_ = std::make_unique<POneMulti>(mlmgpp_, geom_, grids_, dmap_,
+            solution_, rhs_, acoef_, bcoef_, robin_a_, robin_b_, robin_f_);
 #endif
-        }
-        else
-        {
-            rtelevbylev_ = std::make_unique<POneMultiLevbyLev>(mlmgpp_,
-                ref_ratio_, geom_, grids_, dmap_, solution_, rhs_, acoef_,
-                bcoef_, robin_a_, robin_b_, robin_f_);
-        }
+        //        }
+        //        else
+        //        {
+        // level by level option is not ready
+        //            rtelevbylev_ =
+        //            std::make_unique<POneMultiLevbyLev>(mlmgpp_, 2,
+        //                geom_, grids_, dmap_, solution_, rhs_, acoef_, bcoef_,
+        //                robin_a_, robin_b_, robin_f_);
+        //        }
     }
 
     AMREX_GPU_HOST
@@ -145,7 +147,7 @@ public:
         ,
         int ilev)
     {
-        // amrex::Print() << "update radiative properties"<< "\n";
+        //  amrex::Print() << "update radiative properties \n";
 
         auto const& kpco2 = radprop.kpco2();
         auto const& kph2o = radprop.kph2o();
@@ -279,14 +281,50 @@ public:
         }
     }
 
+#ifdef AMREX_USE_EB
+    void initVars(amrex::Vector<amrex::BoxArray> const& grids,
+        amrex::Vector<amrex::DistributionMapping> const& dmap,
+        amrex::Vector<amrex::EBFArrayBoxFactory const*>& factory)
+    {
+        amrex::IntVect ng = amrex::IntVect { 1 };
+        grids_            = grids;
+        dmap_             = dmap;
+
+        for (int ilev = 0; ilev < grids.size(); ++ilev)
+        {
+            solution_[ilev].define(grids[ilev], dmap[ilev], 1, ng,
+                amrex::MFInfo(), *factory[ilev]);
+            rhs_[ilev].define(
+                grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
+            acoef_[ilev].define(
+                grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
+            bcoef_[ilev].define(grids[ilev], dmap[ilev], 1, ng, amrex::MFInfo(),
+                *factory[ilev]);
+            robin_a_[ilev].define(grids[ilev], dmap[ilev], 1, ng,
+                amrex::MFInfo(), *factory[ilev]);
+            robin_b_[ilev].define(grids[ilev], dmap[ilev], 1, ng,
+                amrex::MFInfo(), *factory[ilev]);
+            robin_f_[ilev].define(grids[ilev], dmap[ilev], 1, ng,
+                amrex::MFInfo(), *factory[ilev]);
+            absc_[ilev].define(
+                grids[ilev], dmap[ilev], 1, 0, amrex::MFInfo(), *factory[ilev]);
+
+            solution_[ilev].setVal(0.0, 0, 1, ng);
+            bcoef_[ilev].setVal(1.0, 0, 1, ng);
+        }
+    }
+#endif
+
     void evaluateRad()
     {
+        // std::cout << "begin of evaluateRad() \n";
+
         for (int ilev = 0; ilev < grids_.size(); ++ilev)
             bcoef_[ilev].FillBoundary();
-        if (composite_solve_)
-            rte_->solve();
-        else
-            rtelevbylev_->solve();
+        //        if (composite_solve_)
+        rte_->solve();
+        //        else
+        //            rtelevbylev_->solve();
     }
 
     void calcRadSource(amrex::MFIter const& mfi,

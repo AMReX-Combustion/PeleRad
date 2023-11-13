@@ -24,3 +24,5 @@ consolidation = 0
 
 lo_bc = Periodic Periodic Periodic
 hi_bc = Periodic Periodic Periodic
+
+ebbc_type = 1
