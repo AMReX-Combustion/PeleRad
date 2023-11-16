@@ -1,6 +1,6 @@
 # PeleRad
 
-![CI](https://github.com/AMReX-Combustion/PeleRad/workflows/linux.yml/badge.svg)
+[![CI](https://github.com/AMReX-Combustion/PeleRad/workflows/actions/workflows/linux.yml/badge.svg)](https://github.com/AMReX-Combustion/PeleRad)
 [![AMReX Badge](https://img.shields.io/static/v1?label=%22powered%20by%22&message=%22AMReX%22&color=%22blue%22)](https://amrex-codes.github.io/amrex/)
 [![Exascale Computing Project](https://img.shields.io/badge/supported%20by-ECP-blue)](https://www.exascaleproject.org/research-project/combustion-pele/)
 
