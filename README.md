@@ -15,10 +15,17 @@ PeleRad is a module for modeling radiative transfer in reacting flows. It suppor
 
 ## Installation
 1. Clone the repository: `git clone https://github.com/AMReX-Combustion/PeleRad.git`
-2. The example CMake build scripts for Summit CUDA build and Frontier HIP build are in the /scripts folder.
+2. The example CMake scripts for Summit CUDA build and Frontier HIP build are in the '/scripts' folder.
 
 ## Usage
 PeleRad is designed for modeling radiative transfer in reacting flows. To use PeleRad in conjunction with PeleLMeX, follow these steps:
+1.
+2.
+
+One example script for a test case on Frontier is provided in the '/scripts' folder.
+To run the script:
+'./build_Fontier.sh'
+The results are kept at 
 
 ## License
 The license file is located at
