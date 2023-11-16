@@ -1,5 +1,5 @@
 peleLM.do_rad_solve = 1
-pelerad.kppath = "$PELERAD_HOME/data/kpDB/"
+pelerad.kppath = "path/data/kpDB/"
 pelerad.composite_solve = 1
 pelerad.use_hypre = 0
 pelerad.verbose = 0
