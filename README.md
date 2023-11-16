@@ -24,7 +24,7 @@ PeleRad is designed for modeling radiative transfer in reacting flows. To use Pe
 
 One example script for a test case on Frontier is provided in the '/scripts' folder.
 To run the script:
-'./build_Fontier.sh'
+'./build_PeleLMeX_Fontier.sh'
 The results are kept at 
 
 ## License
