@@ -16,16 +16,20 @@ PeleRad is a module for modeling radiative transfer in reacting flows. It suppor
 ## Installation
 1. Clone the repository: `git clone https://github.com/AMReX-Combustion/PeleRad.git`
 2. The example CMake scripts for Summit CUDA build and Frontier HIP build are in the '/scripts' folder.
+3. To enable to unit tests, PeleRad needs to build with the Boost library.
+
+To build with the PeleLMeX flow solver, GNUMake is prefered.
+One example script to build a test case on Frontier is provided in the '/scripts' folder.
+
+To run the script:
+'./build_PeleLMeX_Fontier.sh' 
 
 ## Usage
-PeleRad is designed for modeling radiative transfer in reacting flows. To use PeleRad in conjunction with PeleLMeX, follow these steps:
-1.
-2.
-
-One example script for a test case on Frontier is provided in the '/scripts' folder.
-To run the script:
-'./build_PeleLMeX_Fontier.sh'
-The results are kept at 
+PeleRad is designed for modeling radiative transfer in reacting flows. To activate and use PeleRad in conjunction with PeleLMeX, follow these steps:
+1. Add 'USE_PELERAD = TRUE' in the GNUmakefile in the case.
+2. If using the clang compiler on Frontier, the c++ file system needs to be linked manually by adding 'LIBRARIES += -lstdc++fs'.
+3. Add the pelerad input keywords to the input file in the case folder. Example keywords can be found in '/inputs/inputs.egLMeX'
+4. The path of the spectral database ($PELERAD_HOME/data/kpDB/) is needed for the pelerad.kppath keywords.
 
 ## License
 The license file is located at
