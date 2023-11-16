@@ -26,10 +26,10 @@ To run the script:
 
 ## Usage
 PeleRad is designed for modeling radiative transfer in reacting flows. To activate and use PeleRad in conjunction with PeleLMeX, follow these steps:
-1. Add 'USE_PELERAD = TRUE' in the GNUmakefile in the case.
-2. If using the clang compiler on Frontier, the c++ file system needs to be linked by adding 'LIBRARIES += -lstdc++fs'.
-3. Add the pelerad input keywords to the input file in the case folder. Example keywords can be found in '/inputs/inputs.egLMeX'
-4. The path of the spectral database ($PELERAD_HOME/data/kpDB/) is needed for the pelerad.kppath keywords.
+1. Add 'USE_PELERAD = TRUE' in the GNUmakefile in the case folder.
+2. If using the clang compiler on Frontier, link the c++ file system by adding 'LIBRARIES += -lstdc++fs'.
+3. Add the pelerad input keywords to the amrex-style input file in the case folder. Example keywords can be found in '/inputs/inputs.egLMeX'
+4. Specify the path of the spectral database ($PELERAD_HOME/data/kpDB/) is needed for the 'pelerad.kppath' keywords in the input file.
 
 ## License
 The license file is located at
