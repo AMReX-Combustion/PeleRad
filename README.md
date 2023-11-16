@@ -1,6 +1,8 @@
 # PeleRad
 
-[![Build Status](https://github.com/AMReX-Combustion/PeleRad/workflows/CI/badge.svg)](https://github.com/AMReX-Combustion/PeleRad/actions)
+![CI](https://github.com/AMReX-Combustion/PeleRad/workflows/CI/badge.svg)
+[![AMReX Badge](https://img.shields.io/static/v1?label=%22powered%20by%22&message=%22AMReX%22&color=%22blue%22)](https://amrex-codes.github.io/amrex/)
+[![Exascale Computing Project](https://img.shields.io/badge/supported%20by-ECP-blue)](https://www.exascaleproject.org/research-project/combustion-pele/)
 
 ## Table of Contents
 - [Description](#description)
