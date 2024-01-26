@@ -6,8 +6,8 @@
 
 # WARNING
 
-The contents of PeleRad have been moved to [PelePhysics](https://github.com/AMReX-Combustion/PelePhysics) and this repository is now archived.
-Further development is continuing within PelePhysics. The test cases are part of PeleLMeX.
+The production version of PeleRad have been moved to [PelePhysics](https://github.com/AMReX-Combustion/PelePhysics) and this repository is now only for experimental developments.
+Further development is continuing within PelePhysics. The tests are in PelePhysics, while the example cases are part of PeleLMeX.
 
 ## Table of Contents
 - [Description](#description)
@@ -42,7 +42,7 @@ The license file is located at
 https://github.com/AMReX-Combustion/PeleMP/blob/master/license.txt
 
 ## Citation
-To cite PeleRad, please use the following [Journal of Fluids Engineering article](https://doi.org/10.1115/1.4064494):
+To cite PeleMP, please use the following [Journal of Fluids Engineering article](https://doi.org/10.1115/1.4064494):
 ```
 @article{owen2023pelemp,
   title={PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite},
